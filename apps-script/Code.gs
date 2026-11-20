@@ -12,7 +12,7 @@ var GRACE = 180000;      // game yang sedang berjalan boleh selesai sampai 3 men
 var COST = 5;            // biaya setiap aksi
 var KILL = 3000;         // bonus setiap Wumpus yang terbunuh
 var RESULTS = { win: 1, climb: 1, pit: 1, wumpus: 1, quit: 1 };
-var DEFAULTS = { n: 5, pits: 2, wumpus: 1, dur: 5, map: null };
+var DEFAULTS = { n: 5, pits: 2, wumpus: 1, dur: 5, limit: 0, map: null };
 
 /* ===================== setup (jalankan sekali / setelah update) ===================== */
 function setup() {
@@ -59,7 +59,7 @@ function cleanSettings_(st) {
   var map = cleanMap_(st.map);
   var n = map ? map.n : int_(st.n, 4, 8, DEFAULTS.n), maxP = Math.floor(n * n * 0.3);
   var pits = map ? map.P.length : int_(st.pits, 0, maxP, DEFAULTS.pits), w = map ? map.W.length : int_(st.wumpus, 1, 3, DEFAULTS.wumpus);
-  return { n: n, pits: pits, wumpus: w, dur: int_(st.dur, 1, 120, DEFAULTS.dur), map: map };
+  return { n: n, pits: pits, wumpus: w, dur: int_(st.dur, 1, 120, DEFAULTS.dur), limit: int_(st.limit, 0, 50, 0), map: map };
 }
 
 function rows_() {
@@ -77,8 +77,8 @@ function board_(sid, list) {
   var m = {};
   list.forEach(function (x) {
     if (x.sid !== sid) return;
-    var p = m[x.key] || (m[x.key] = { key: x.key, name: x.name, nim: x.nim, guest: x.guest, games: 0, wins: 0, best: null, bestA: null, bestT: null, total: null, last: null, playing: false });
-    p.name = x.name;
+    var p = m[x.key] || (m[x.key] = { key: x.key, name: x.name, nim: x.nim, guest: x.guest, games: 0, wins: 0, best: null, bestA: null, bestT: null, total: null, started: 0, last: null, playing: false });
+    p.name = x.name; p.started++;
     if (x.r === 'playing') { p.playing = true; return; }
     if (!RESULTS[x.r]) return;
     p.games++; p.total = (p.total || 0) + x.s; if (x.r === 'win') p.wins++; p.last = { r: x.r, s: x.s, t: x.t };
@@ -109,7 +109,7 @@ function doGet(e) {
     if (a === 'board') {
       var sid = clean_(q.ses || q.sid, 40) || (s && s.id);
       if (!sid) return out_({ ok: true, now: now, board: [] });
-      var b = cachedBoard_(sid).map(function (p) { return { key: p.key, name: p.name, best: p.best, total: p.total, games: p.games, wins: p.wins }; });
+      var b = cachedBoard_(sid).map(function (p) { return { key: p.key, name: p.name, best: p.best, total: p.total, games: p.games, wins: p.wins, started: p.started }; });
       return out_({ ok: true, now: now, sid: sid, board: b });
     }
     if (a === 'admin') {
@@ -176,9 +176,14 @@ function start_(b) {
     var j = joined_(s.id);
     if (!j[key]) { j[key] = { name: name, nim: nim, guest: !!b.guest, t: now }; props_().setProperty('JOIN_' + s.id, JSON.stringify(j)); }
     var f = sheet_(SH_GAMES).getRange('B:B').createTextFinder(gid).matchEntireCell(true).findNext();
+    var lim = +(s.settings && s.settings.limit) || 0, used = 0;
+    if (!f && lim) {
+      used = rows_().filter(function (x) { return x.sid === s.id && x.key === key; }).length;
+      if (used >= lim) return { ok: false, err: 'batas ' + lim + ' game sudah habis', limit: true, used: used };
+    }
     if (!f) sheet_(SH_GAMES).appendRow([new Date(), gid, key, name, nim ? "'" + nim : '', !!b.guest, 'sesi', int_(b.n, 4, 8, 5), 'playing', '', '', '', s.id]);
     bust_(s.id);
-    return { ok: true, gid: gid, key: key, sid: s.id };
+    return { ok: true, gid: gid, key: key, sid: s.id, left: lim ? lim - used - (f ? 0 : 1) : null };
   });
 }
 

@@ -322,7 +322,7 @@ body.proj .feed li{font-size:18px}
    <div class="card">
     <h3 style="font-size:22px">Cara main</h3>
     <ul style="margin:8px 0 0;padding-left:20px;font-size:15px">
-     <li>Dosen membuka lobby, kamu bergabung, lalu dosen menekan Mulai. Selama waktu sesi, kamu boleh main berapa kali pun. Yang dihitung <b>total skor</b> semua game kamu: menang menambah, mati mengurangi.</li>
+     <li>Dosen membuka lobby, kamu bergabung, lalu dosen menekan Mulai. Selama waktu sesi, kamu boleh main berkali-kali (kecuali dosen memberi batas jumlah game). Yang dihitung <b>total skor</b> semua game kamu: menang menambah, mati mengurangi.</li>
      <li>Mulai di (1,1). Anak panah tidak dibawa dari awal: cari di dalam gua, lalu tekan Ambil.</li>
      <li><b>Stench</b>: Wumpus di kotak sebelah. <b>Breeze</b>: lubang di kotak sebelah. <b>Glitter</b>: emas di kotakmu. <b>Bump</b>: menabrak dinding. <b>Scream</b>: panahmu mengenai Wumpus.</li>
      <li>Laptop: tombol panah / WASD untuk bergerak. HP: tombol arah di layar. Tembak: tekan Panah (atau F) lalu pilih arah. Keluar hanya dari (1,1).</li>
@@ -416,6 +416,7 @@ body.proj .feed li{font-size:18px}
      <div><p class="lab">Durasi (menit)</p><input id="fDur" type="number" min="1" max="120" value="5" inputmode="numeric"></div>
      <div><p class="lab">Jumlah lubang</p><input id="fPits" type="number" min="0" max="19" value="2" inputmode="numeric"></div>
      <div><p class="lab">Jumlah Wumpus</p><select id="fW"><option>1</option><option>2</option><option>3</option></select></div>
+     <div style="grid-column:1/-1"><p class="lab">Batas game per pemain</p><input id="fLimit" type="number" min="0" max="50" value="0" inputmode="numeric"><p class="note" style="margin:4px 0 0">0 = tanpa batas (main sepuasnya sampai waktu habis)</p></div>
     </div>
     <p class="lab" style="margin-top:10px">Peta</p>
     <div class="modes" style="margin-bottom:6px">
@@ -457,7 +458,7 @@ const ROSTER=[["103052400035","Danniswara Wikramatunggad"],["103052400080","Muha
 /* ---------- konfigurasi server ---------- */
 const API_URL="https://script.google.com/macros/s/AKfycbyy686dNvlEe65RhC6GRTL-c7kbaRAG7Engt8vLZiitJhTIYyDI3loB6eIUIqP-JQmN/exec";   // ← URL Web App Apps Script (lihat README)
 const SHEET_URL="https://docs.google.com/spreadsheets/d/1n1mZZrQLJ7XZ7BP8wdfp5yxgR7E7AbKg5A36XPKCa_Q/edit"; // ← opsional: URL Google Sheet untuk tombol di dashboard
-const COST=5,KILL=3000, DEF={n:5,pits:2,wumpus:1,dur:5};
+const COST=5,KILL=3000, DEF={n:5,pits:2,wumpus:1,dur:5,limit:0};
 const SLIDE={n:4,W:[[1,3]],G:[2,3],P:[[3,1],[3,3],[4,4]],A:[2,1]};
 const DIRS=[[1,0],[0,1],[-1,0],[0,-1]], DNAME=["timur","utara","barat","selatan"];
 const RES={win:"Pulang bawa emas",climb:"Keluar tanpa emas",pit:"Jatuh ke lubang",wumpus:"Dimakan Wumpus",quit:"Menyerah"};
@@ -519,7 +520,7 @@ function currentPlayer(){
 if(LS.last){if(LS.last.guest){tab="guest";$("inGuest").value=LS.last.name}else if(ROSTER.some(r=>r[0]===LS.last.nim))sel.value=LS.last.nim}
 setTab(tab);
 const amJoined=p=>!!(p&&SES&&LS.joined[SES.id]===keyOf(p));
-const setChips=st=>`<div class="chips"><span>${st.n}×${st.n}</span><span>${st.map?"Peta tetap":`${st.pits} lubang · ${st.wumpus} Wumpus`}</span><span>${st.dur} menit</span></div>`;
+const setChips=st=>`<div class="chips"><span>${st.n}×${st.n}</span><span>${st.map?"Peta tetap":`${st.pits} lubang · ${st.wumpus} Wumpus`}</span><span>${st.dur} menit</span>${st.limit?`<span>Maks ${st.limit} game</span>`:""}</div>`;
 
 /* ---------- beranda: status sesi ---------- */
 
@@ -536,7 +537,7 @@ function renderHome(){
    <p class="note" style="margin:8px 0 4px">${JOINED.length} pemain di lobby${j?" · kamu sudah masuk, tunggu dosen menekan Mulai":""}</p><div class="joined">${JOINED.slice(0,24).map(n=>av(n,30)).join("")}${JOINED.length>24?`<span class="note">+${JOINED.length-24}</span>`:""}</div>`;
   label=j?"Menunggu dimulai…":"Gabung lobby";dis=!p||j}
  else if(st==="running"){box=`<span class="st run"><i class="dot live"></i>Sesi berlangsung</span><div class="sestitle">${esc(SES.title)}</div><div class="timer big" data-ends="${SES.endsAt}">${fmtT(SES.endsAt-now())}</div>${setChips(SES.settings)}
-   <p class="note" style="margin:8px 0 0">Main sepuasnya sampai waktu habis. Yang dihitung total skor semua gamenya, jadi main hati-hati.${myBest(p)}</p>`;label="Main";dis=!p}
+   ${(()=>{const lim=SES.settings.limit,left=gamesLeft(p);return`<p class="note" style="margin:8px 0 0">${lim?`Maksimal <b>${lim} game</b> per orang${p?` · sisa <b>${left}</b>`:""}.`:"Main sepuasnya sampai waktu habis."} Yang dihitung total skor semua gamenya, jadi main hati-hati.${myBest(p)}</p>`})()}`;label=p&&gamesLeft(p)<=0?"Jatah game habis":"Main";dis=!p||gamesLeft(p)<=0}
  else if(st==="grace"){box=`<span class="st end">Waktu habis</span><div class="sestitle">${esc(SES.title)}</div><p class="note" style="margin:6px 0 0">Menunggu game terakhir selesai, lalu hasil akhir diumumkan.</p>`;dis=true}
  else if(st==="ended"){box=`<span class="st end">Sesi selesai</span><div class="sestitle">${esc(SES.title)}</div><p class="note" style="margin:6px 0 0">Lihat hasil akhir di papan skor.${myBest(p)}</p>`;dis=true}
  $("sesBox").innerHTML=box;
@@ -544,6 +545,8 @@ function renderHome(){
  if(!starting){$("btnPlay").textContent=label;$("btnPlay").disabled=dis||!p;$("playNote").textContent=note||(st==="lobby"&&!p?"Pilih namamu dulu, lalu gabung lobby.":"")}
  $("btnPractice").hidden=st==="running";
 }
+const myRow=p=>p?BOARD.find(b=>b.key===keyOf(p)):null;
+const gamesLeft=p=>{const lim=SES&&SES.settings&&SES.settings.limit;if(!lim)return Infinity;const r=myRow(p);return Math.max(0,lim-(r?(r.started||r.games||0):0))};
 function myBest(p){if(!p)return"";const i=BOARD.findIndex(b=>b.key===keyOf(p));if(i<0)return"";const b=BOARD[i];return b.total===null?"":` Total skormu: <b>${b.total}</b> (peringkat ${i+1}, ${b.games} game).`}
 function renderBoardHome(){const p=currentPlayer();$("boardHome").innerHTML=BOARD.some(b=>b.best!==null)?boardHTML(BOARD,{me:p?keyOf(p):"",limit:10}):`<p class="note">Belum ada skor di sesi ini.</p>`;renderHome()}
 
@@ -649,11 +652,11 @@ function end(r){
  if(r==="pit"||r==="wumpus"){const ag=document.querySelector("#board .agent");ag&&ag.classList.add("hurt");play([r==="pit"?"breeze":"scream","bump"])}
  if(r==="win")play(["glitter","pick"]);
  render(true);reportEnd();
- const good=r==="win",running=SES&&SES.status==="running"&&S.m==="sesi";
+ const good=r==="win",left=S.m==="sesi"?gamesLeft(S.player):Infinity,running=SES&&SES.status==="running"&&S.m==="sesi"&&left>0;
  setTimeout(()=>modal(`<h2 style="color:${good?"var(--ok)":"var(--red)"}">${good?"Berhasil!":r==="quit"?"Menyerah":r==="climb"?"Selamat, tapi…":"Game over"}</h2>
   <p class="note" style="margin:4px 0 10px">${RES[r]} · dunia ${S.n}×${S.n}</p><div class="big">${S.score}</div>
   <div class="brk"><div><span>${S.act} aksi × −${COST}</span><b>${-S.act*COST}</b></div>${S.kills?`<div><span>Membunuh Wumpus${S.kills>1?` ×${S.kills}`:""}</span><b>+${S.kills*KILL}</b></div>`:""}<div><span>${good?"Pulang bawa emas":bonus<0?"Terbunuh":"Bonus"}</span><b>${bonus>0?"+":""}${bonus}</b></div></div>
-  <p class="note">${S.m==="sesi"?(running?`Skor dikirim. Sisa waktu ${fmtT(SES.endsAt-now())} — main lagi untuk menambah total skormu.`:"Skor dikirim. Waktu sesi sudah habis."):"Mode latihan, tidak dihitung."}</p>
+  <p class="note">${S.m==="sesi"?(running?`Skor dikirim. Sisa waktu ${fmtT(SES.endsAt-now())}${left<Infinity?` · sisa ${left} game`:""} — main lagi untuk menambah total skormu.`:left<=0?"Skor dikirim. Jatah game kamu di sesi ini sudah habis.":"Skor dikirim. Waktu sesi sudah habis."):"Mode latihan, tidak dihitung."}</p>
   <div class="row"><button class="pri" id="mAgain">${running||S.m!=="sesi"?"Main lagi":"Lihat hasil"}</button><button id="mHome">Beranda</button></div>`),r==="quit"?0:650);
 }
 $("modal").addEventListener("click",e=>{const id=e.target.id;
@@ -722,7 +725,9 @@ $("btnPlay").onclick=async()=>{const p=currentPlayer();if(!p||starting||!SES)ret
   if(SES.status==="lobby"){const r=await apiPost({op:"join",name:p.name,nim:p.nim,guest:p.guest});if(!r.ok)throw new Error(r.err);LS.joined[r.sid]=r.key;saveLS();await pollSession();return}
   if(SES.status==="running"){const st=SES.settings,map=st.map?st.map:randomMap(st.n,st.pits,st.wumpus);
    const gid=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-   const r=await apiPost({op:"start",gid,name:p.name,nim:p.nim,guest:p.guest,n:N(map)});if(!r.ok)throw new Error(r.err);
+   if(gamesLeft(p)<=0)throw new Error("jatah game kamu sudah habis");
+   const r=await apiPost({op:"start",gid,name:p.name,nim:p.nim,guest:p.guest,n:N(map)});if(!r.ok){if(r.limit){const row=myRow(p);if(row)row.started=r.used;else BOARD.push({key:keyOf(p),name:p.name,best:null,total:null,games:r.used,started:r.used,wins:0})}throw new Error(r.err)}
+   {const row=myRow(p);if(row)row.started=(row.started||0)+1;else BOARD.push({key:keyOf(p),name:p.name,best:null,total:null,games:0,started:1,wins:0})}
    LS.joined[r.sid]=r.key;saveLS();starting=false;newGame(map,"sesi",gid,p)}
  }catch(e){$("playNote").textContent=e.message==="noapi"?"Server belum diatur.":"Gagal: "+(e.message||"tidak bisa terhubung ke server")+". Coba lagi.";pollSession()}
  finally{starting=false;$("btnPlay").textContent=old;if(!$("vHome").hidden)renderHome()}};
@@ -779,12 +784,12 @@ if(SHEET_URL){$("aSheet").href=SHEET_URL;$("aSheet").hidden=false}
 /* formulir sesi */
 function readForm(){const fixed=document.querySelector("input[name=fMap]:checked").value==="fixed";
  const m=fixed&&adminMap?normMap(adminMap):null;
- return{title:$("fTitle").value.trim(),settings:{n:m?m.n:+$("fN").value,dur:+$("fDur").value,pits:+$("fPits").value,wumpus:+$("fW").value,map:fixed?adminMap:null}}}
+ return{title:$("fTitle").value.trim(),settings:{n:m?m.n:+$("fN").value,dur:+$("fDur").value,limit:Math.max(0,+$("fLimit").value||0),pits:+$("fPits").value,wumpus:+$("fW").value,map:fixed?adminMap:null}}}
 function saveForm(){LS.adminForm={...readForm(),fixed:document.querySelector("input[name=fMap]:checked").value==="fixed",map:adminMap};saveLS();renderFormInfo()}
-function loadForm(){const f=LS.adminForm;if(!f)return;$("fTitle").value=f.title||"";const st=f.settings||{};$("fN").value=String(st.n||5);$("fDur").value=st.dur||5;$("fPits").value=st.pits??2;$("fW").value=String(st.wumpus||1);adminMap=f.map||null;
+function loadForm(){const f=LS.adminForm;if(!f)return;$("fTitle").value=f.title||"";const st=f.settings||{};$("fN").value=String(st.n||5);$("fDur").value=st.dur||5;$("fLimit").value=st.limit||0;$("fPits").value=st.pits??2;$("fW").value=String(st.wumpus||1);adminMap=f.map||null;
  document.querySelector(`input[name=fMap][value=${f.fixed&&adminMap?"fixed":"random"}]`).checked=true;renderFormInfo()}
 function renderFormInfo(){$("fMapInfo").textContent=mapDesc(adminMap);document.querySelector("input[name=fMap][value=fixed]").disabled=!adminMap;$("fPits").max=Math.floor((+$("fN").value)**2*.3)}
-["fTitle","fN","fDur","fPits","fW"].forEach(id=>$(id).addEventListener("change",saveForm));document.querySelectorAll("input[name=fMap]").forEach(r=>r.onchange=saveForm);
+["fTitle","fN","fDur","fPits","fW","fLimit"].forEach(id=>$(id).addEventListener("change",saveForm));document.querySelectorAll("input[name=fMap]").forEach(r=>r.onchange=saveForm);
 loadForm();
 
 let adminData=null,adminTimer=null,prevSnap=null,feed=[];
@@ -809,10 +814,10 @@ function renderAdmin(){const d=adminData;if(!d)return;const s=d.session,st=s?s.s
  if(st==="running"||st==="grace")A.push(`<button data-op="extend1">+1 menit</button>`,`<button data-op="extend5">+5 menit</button>`,`<button class="pri" data-op="stop">Akhiri sekarang</button>`);
  if(st==="ended")A.push(`<button data-op="close">Tutup sesi</button>`);
  $("aActions").innerHTML=A.join("");
- const lock=st==="running"||st==="grace";["fN","fDur","fPits","fW","fTitle","fEditMap"].forEach(id=>$(id).disabled=lock);document.querySelectorAll("input[name=fMap]").forEach(r=>r.disabled=lock||(r.value==="fixed"&&!adminMap));
+ const lock=st==="running"||st==="grace";["fN","fDur","fPits","fW","fLimit","fTitle","fEditMap"].forEach(id=>$(id).disabled=lock);document.querySelectorAll("input[name=fMap]").forEach(r=>r.disabled=lock||(r.value==="fixed"&&!adminMap));
  // livescore
  $("lTitle").textContent=s?s.title:"Belum ada sesi";
- $("lStatus").innerHTML=s?`<span class="st ${st==="lobby"?"lobby":st==="running"?"run":"end"}">${stTxt}</span> <span class="lset">${s.settings.n}×${s.settings.n} · ${s.settings.map?"peta tetap":`${s.settings.pits} lubang · ${s.settings.wumpus} Wumpus`} · ${s.settings.dur} menit</span>`:"";
+ $("lStatus").innerHTML=s?`<span class="st ${st==="lobby"?"lobby":st==="running"?"run":"end"}">${stTxt}</span> <span class="lset">${s.settings.n}×${s.settings.n} · ${s.settings.map?"peta tetap":`${s.settings.pits} lubang · ${s.settings.wumpus} Wumpus`} · ${s.settings.dur} menit${s.settings.limit?` · maks ${s.settings.limit} game`:""}</span>`:"";
  const tm=$("lTimer");if(st==="running"){tm.dataset.ends=s.endsAt;tm.classList.toggle("hot",s.endsAt-now()<60000)}else{delete tm.dataset.ends;tm.textContent=st==="lobby"?fmtT(s.settings.dur*60000):st==="none"?"--:--":"00:00";tm.classList.remove("hot")}
  const games=ps.reduce((a,p)=>a+p.games,0),wins=ps.reduce((a,p)=>a+p.wins,0),playing=ps.filter(p=>isLive(p)||p.playing).length;
  $("lStats").innerHTML=`<div><small>Pemain</small><b>${ps.length}</b></div><div><small>Sedang main</small><b>${playing}</b></div><div><small>Total game</small><b>${games}</b></div><div><small>Pulang bawa emas</small><b>${wins}</b></div>`;

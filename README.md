@@ -56,7 +56,7 @@ Setelah 1–2 menit, game bisa dibuka di `https://<username>.github.io/wumpus-wo
 
 - **Mahasiswa**: buka link, pilih nama dari daftar presensi (atau Guest), tekan **Gabung lobby**, lalu tunggu dosen menekan Mulai. Tidak perlu login. Di luar sesi tersedia mode **Latihan** (tidak dihitung).
 - **Dosen**: klik **Admin** di bagian bawah halaman, lalu masukkan `ADMIN_KEY`. Di **Dashboard** dosen bisa:
-  - mengatur sesi (judul, ukuran dunia, durasi, jumlah lubang dan Wumpus, atau peta tetap buatan sendiri);
+  - mengatur sesi (judul, ukuran dunia, durasi, jumlah lubang dan Wumpus, batas game per pemain, atau peta tetap buatan sendiri). Batas game 0 berarti tanpa batas; jika diisi, server menolak game melebihi batas;
   - **Buka lobby → Mulai sekarang**, menambah waktu (+1 / +5 menit), atau mengakhiri sesi;
   - memantau livescore dengan podium juara 1–3, peringkat, dan feed aktivitas; **Mode proyektor** untuk ditampilkan di kelas;
   - menghapus skor satu pemain atau semua skor sesi (baris dihapus dari Google Sheet);

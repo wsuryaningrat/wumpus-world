@@ -3,7 +3,7 @@
  * Developed by WHS (SoC – Telkom University)
  *
  * Alur: dosen membuka lobby → mahasiswa bergabung → dosen menekan Mulai → selama waktu sesi
- * mahasiswa boleh main berapa kali pun; papan skor memakai skor terbaik tiap mahasiswa.
+ * mahasiswa boleh main berapa kali pun; papan skor memakai total skor semua game tiap mahasiswa.
  * Pasang: tempel file ini, jalankan setup() sekali, Deploy sebagai Web app (Execute as: Me, Anyone).
  */
 var SH_GAMES = 'Games', SH_REKAP = 'Rekap';
@@ -25,7 +25,7 @@ function setup() {
   r.clear();
   r.getRange('A1').setFormula(
     '=QUERY(Games!A:M,"select M, D, E, count(B), max(J), sum(J) where I <> \'playing\' and I <> \'late\' and B is not null ' +
-    'group by M, D, E order by M desc, max(J) desc label M \'Sesi\', D \'Nama\', E \'NIM\', count(B) \'Jumlah game\', max(J) \'Skor terbaik\', sum(J) \'Total skor\'",1)');
+    'group by M, D, E order by M desc, sum(J) desc label M \'Sesi\', D \'Nama\', E \'NIM\', count(B) \'Jumlah game\', max(J) \'Skor terbaik\', sum(J) \'Total skor\'",1)');
   var p = PropertiesService.getScriptProperties();
   if (!p.getProperty('ADMIN_KEY')) p.setProperty('ADMIN_KEY', Utilities.getUuid().replace(/-/g, '').slice(0, 10));
   Logger.log('ADMIN_KEY = ' + p.getProperty('ADMIN_KEY'));
@@ -72,21 +72,21 @@ function rows_() {
   });
 }
 
-/** papan skor sesi: skor terbaik per pemain (seri: aksi lebih sedikit, lalu lebih dulu) */
+/** papan skor sesi: total skor semua game per pemain (seri: skor terbaik lebih tinggi, lalu lebih dulu) */
 function board_(sid, list) {
   var m = {};
   list.forEach(function (x) {
     if (x.sid !== sid) return;
-    var p = m[x.key] || (m[x.key] = { key: x.key, name: x.name, nim: x.nim, guest: x.guest, games: 0, wins: 0, best: null, bestA: null, bestT: null, last: null, playing: false });
+    var p = m[x.key] || (m[x.key] = { key: x.key, name: x.name, nim: x.nim, guest: x.guest, games: 0, wins: 0, best: null, bestA: null, bestT: null, total: null, last: null, playing: false });
     p.name = x.name;
     if (x.r === 'playing') { p.playing = true; return; }
     if (!RESULTS[x.r]) return;
-    p.games++; if (x.r === 'win') p.wins++; p.last = { r: x.r, s: x.s, t: x.t };
+    p.games++; p.total = (p.total || 0) + x.s; if (x.r === 'win') p.wins++; p.last = { r: x.r, s: x.s, t: x.t };
     if (p.best === null || x.s > p.best || (x.s === p.best && x.a < p.bestA)) { p.best = x.s; p.bestA = x.a; p.bestT = x.t; }
   });
   return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) {
-    if (a.best === null && b.best === null) return 0; if (a.best === null) return 1; if (b.best === null) return -1;
-    return b.best - a.best || a.bestA - b.bestA || a.bestT - b.bestT;
+    if (a.total === null && b.total === null) return 0; if (a.total === null) return 1; if (b.total === null) return -1;
+    return b.total - a.total || b.best - a.best || a.bestT - b.bestT;
   });
 }
 function cachedBoard_(sid) {
@@ -109,13 +109,13 @@ function doGet(e) {
     if (a === 'board') {
       var sid = clean_(q.sid, 40) || (s && s.id);
       if (!sid) return out_({ ok: true, now: now, board: [] });
-      var b = cachedBoard_(sid).map(function (p) { return { key: p.key, name: p.name, best: p.best, games: p.games, wins: p.wins }; });
+      var b = cachedBoard_(sid).map(function (p) { return { key: p.key, name: p.name, best: p.best, total: p.total, games: p.games, wins: p.wins }; });
       return out_({ ok: true, now: now, sid: sid, board: b });
     }
     if (a === 'admin') {
       if (!isAdmin_(q.k)) return out_({ ok: false, err: 'kunci admin salah' });
       var players = s ? board_(s.id, rows_()) : [], joined = s ? joined_(s.id) : {};
-      Object.keys(joined).forEach(function (k) { if (!players.some(function (p) { return p.key === k; })) players.push({ key: k, name: joined[k].name, nim: joined[k].nim, guest: joined[k].guest, games: 0, wins: 0, best: null, playing: false, last: null }); });
+      Object.keys(joined).forEach(function (k) { if (!players.some(function (p) { return p.key === k; })) players.push({ key: k, name: joined[k].name, nim: joined[k].nim, guest: joined[k].guest, games: 0, wins: 0, best: null, total: null, playing: false, last: null }); });
       if (s) {
         var live = CacheService.getScriptCache().getAll(players.map(function (p) { return 'L:' + s.id + ':' + p.key; }));
         players.forEach(function (p) { var v = live['L:' + s.id + ':' + p.key]; p.live = v ? JSON.parse(v) : null; });

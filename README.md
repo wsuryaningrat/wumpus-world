@@ -11,7 +11,7 @@ Developed by **WHS** (SoC – Telkom University)
 - Anak panah tidak dibawa dari awal: harus ditemukan di dalam gua lalu diambil.
 - Setiap aksi −5, keluar membawa emas +1000, membunuh Wumpus dengan panah +3000, terbunuh (lubang / Wumpus hidup) −1000.
 - Default: 2 lubang dan 1 Wumpus. Dosen bisa mengubah ukuran dunia, jumlah lubang, jumlah Wumpus (1–3), atau memakai peta tetap.
-- Main dalam **sesi berwaktu**: dosen membuka lobby, mahasiswa bergabung, dosen menekan Mulai. Selama waktu sesi (misalnya 5 menit) mahasiswa boleh main berkali-kali; yang dihitung skor terbaik. Game yang selesai lebih dari 3 menit setelah waktu habis ditandai `late` dan tidak dihitung.
+- Main dalam **sesi berwaktu**: dosen membuka lobby, mahasiswa bergabung, dosen menekan Mulai. Selama waktu sesi (misalnya 5 menit) mahasiswa boleh main berkali-kali; peringkat memakai **total skor** semua game (menang menambah, mati mengurangi). Game yang selesai lebih dari 3 menit setelah waktu habis ditandai `late` dan tidak dihitung.
 
 ## Isi repo
 
@@ -36,7 +36,7 @@ Developed by **WHS** (SoC – Telkom University)
 Setelah `setup` dijalankan, Sheet berisi tiga tab:
 
 - **Games**: satu baris per game (mulai, ID, nama, NIM, mode, ukuran, status, skor, aksi, selesai, sesi).
-- **Rekap**: rekap otomatis per sesi dan per mahasiswa (jumlah game, skor terbaik, total).
+- **Rekap**: rekap otomatis per sesi dan per mahasiswa (jumlah game, skor terbaik, total; diurutkan menurut total).
 
 ### 2. Sambungkan game ke Apps Script
 

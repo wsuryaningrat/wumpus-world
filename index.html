@@ -322,7 +322,7 @@ body.proj .feed li{font-size:18px}
    <div class="card">
     <h3 style="font-size:22px">Cara main</h3>
     <ul style="margin:8px 0 0;padding-left:20px;font-size:15px">
-     <li>Dosen membuka lobby, kamu bergabung, lalu dosen menekan Mulai. Selama waktu sesi, kamu boleh main berapa kali pun. Yang dihitung <b>skor terbaikmu</b>.</li>
+     <li>Dosen membuka lobby, kamu bergabung, lalu dosen menekan Mulai. Selama waktu sesi, kamu boleh main berapa kali pun. Yang dihitung <b>total skor</b> semua game kamu: menang menambah, mati mengurangi.</li>
      <li>Mulai di (1,1). Anak panah tidak dibawa dari awal: cari di dalam gua, lalu tekan Ambil.</li>
      <li><b>Stench</b>: Wumpus di kotak sebelah. <b>Breeze</b>: lubang di kotak sebelah. <b>Glitter</b>: emas di kotakmu. <b>Bump</b>: menabrak dinding. <b>Scream</b>: panahmu mengenai Wumpus.</li>
      <li>Laptop: tombol panah / WASD untuk bergerak. HP: tombol arah di layar. Tembak: tekan Panah (atau F) lalu pilih arah. Keluar hanya dari (1,1).</li>
@@ -442,7 +442,7 @@ body.proj .feed li{font-size:18px}
 
   <div class="card manage" style="margin-top:16px">
    <div class="row" style="align-items:center"><h3 style="font-size:22px">Kelola skor sesi ini</h3><button id="aCsv" style="flex:0 0 auto">Salin CSV</button><button id="aClear" style="flex:0 0 auto;color:var(--red)">Hapus semua skor sesi</button></div>
-   <div class="scroll" style="margin-top:8px"><table class="stack"><thead><tr><th>#</th><th>Nama</th><th>NIM</th><th class="num">Game</th><th class="num">Menang</th><th class="num">Terbaik</th><th></th></tr></thead><tbody id="aBody"></tbody></table></div>
+   <div class="scroll" style="margin-top:8px"><table class="stack"><thead><tr><th>#</th><th>Nama</th><th>NIM</th><th class="num">Game</th><th class="num">Menang</th><th class="num">Terbaik</th><th class="num">Total</th><th></th></tr></thead><tbody id="aBody"></tbody></table></div>
   </div>
  </section>
 </main>
@@ -536,7 +536,7 @@ function renderHome(){
    <p class="note" style="margin:8px 0 4px">${JOINED.length} pemain di lobby${j?" · kamu sudah masuk, tunggu dosen menekan Mulai":""}</p><div class="joined">${JOINED.slice(0,24).map(n=>av(n,30)).join("")}${JOINED.length>24?`<span class="note">+${JOINED.length-24}</span>`:""}</div>`;
   label=j?"Menunggu dimulai…":"Gabung lobby";dis=!p||j}
  else if(st==="running"){box=`<span class="st run"><i class="dot live"></i>Sesi berlangsung</span><div class="sestitle">${esc(SES.title)}</div><div class="timer big" data-ends="${SES.endsAt}">${fmtT(SES.endsAt-now())}</div>${setChips(SES.settings)}
-   <p class="note" style="margin:8px 0 0">Main sepuasnya sampai waktu habis. Yang dihitung skor terbaikmu.${myBest(p)}</p>`;label="Main";dis=!p}
+   <p class="note" style="margin:8px 0 0">Main sepuasnya sampai waktu habis. Yang dihitung total skor semua gamenya, jadi main hati-hati.${myBest(p)}</p>`;label="Main";dis=!p}
  else if(st==="grace"){box=`<span class="st end">Waktu habis</span><div class="sestitle">${esc(SES.title)}</div><p class="note" style="margin:6px 0 0">Menunggu game terakhir selesai, lalu hasil akhir diumumkan.</p>`;dis=true}
  else if(st==="ended"){box=`<span class="st end">Sesi selesai</span><div class="sestitle">${esc(SES.title)}</div><p class="note" style="margin:6px 0 0">Lihat hasil akhir di papan skor.${myBest(p)}</p>`;dis=true}
  $("sesBox").innerHTML=box;
@@ -544,17 +544,17 @@ function renderHome(){
  if(!starting){$("btnPlay").textContent=label;$("btnPlay").disabled=dis||!p;$("playNote").textContent=note||(st==="lobby"&&!p?"Pilih namamu dulu, lalu gabung lobby.":"")}
  $("btnPractice").hidden=st==="running";
 }
-function myBest(p){if(!p)return"";const i=BOARD.findIndex(b=>b.key===keyOf(p));if(i<0)return"";const b=BOARD[i];return b.best===null?"":` Skormu: <b>${b.best}</b> (peringkat ${i+1}, ${b.games} game).`}
+function myBest(p){if(!p)return"";const i=BOARD.findIndex(b=>b.key===keyOf(p));if(i<0)return"";const b=BOARD[i];return b.total===null?"":` Total skormu: <b>${b.total}</b> (peringkat ${i+1}, ${b.games} game).`}
 function renderBoardHome(){const p=currentPlayer();$("boardHome").innerHTML=BOARD.some(b=>b.best!==null)?boardHTML(BOARD,{me:p?keyOf(p):"",limit:10}):`<p class="note">Belum ada skor di sesi ini.</p>`;renderHome()}
 
 /* ---------- podium & peringkat ---------- */
 const CROWN='<svg viewBox="0 0 24 24" width="26" height="26"><path d="M3 18h18l-1.5-10-4.5 4-3-7-3 7-4.5-4z" fill="#f5b700" stroke="#a87a00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 function podiumHTML(top){const order=[1,0,2],cls=["p1","p2","p3"];
  return`<div class="podium">${order.map(i=>{const p=top[i];if(!p)return`<div class="pod ${cls[i]} empty"><div class="blk">${i+1}</div></div>`;
-  return`<div class="pod ${cls[i]}">${i===0?CROWN:""}${av(p.name,i===0?56:46)}<div class="who">${esc(p.name)}</div><div class="sc">${p.best}</div><div class="blk">${i+1}</div></div>`}).join("")}</div>`}
+  return`<div class="pod ${cls[i]}">${i===0?CROWN:""}${av(p.name,i===0?56:46)}<div class="who">${esc(p.name)}</div><div class="sc">${p.total}</div><div class="blk">${i+1}</div></div>`}).join("")}</div>`}
 function boardHTML(rows,{me="",limit=50,dark=false,live=null}={}){const ranked=rows.filter(r=>r.best!==null),rest=rows.filter(r=>r.best===null);
  return podiumHTML(ranked.slice(0,3))+`<ol class="rank${dark?" dark":""}">`+[...ranked.slice(3,limit),...(live?rest:[])].map((r,i)=>{const lv=live&&live(r);
-  return`<li class="${r.key===me?"me":""}"><span class="r">${r.best===null?"–":i+4}</span>${av(r.name)}<span class="nm"><b>${esc(r.name)}</b><small>${lv||`${r.games} game${r.wins?` · ${r.wins} menang`:""}`}</small></span><span class="sc">${r.best??"—"}</span></li>`}).join("")+`</ol>`}
+  return`<li class="${r.key===me?"me":""}"><span class="r">${r.best===null?"–":i+4}</span>${av(r.name)}<span class="nm"><b>${esc(r.name)}</b><small>${lv||`${r.games} game${r.wins?` · ${r.wins} menang`:""}`}</small></span><span class="sc">${r.total??"—"}</span></li>`}).join("")+`</ol>`}
 
 /* ---------- suara ---------- */
 /* ---------- suara (Web Audio, disintesis) ---------- */
@@ -653,7 +653,7 @@ function end(r){
  setTimeout(()=>modal(`<h2 style="color:${good?"var(--ok)":"var(--red)"}">${good?"Berhasil!":r==="quit"?"Menyerah":r==="climb"?"Selamat, tapi…":"Game over"}</h2>
   <p class="note" style="margin:4px 0 10px">${RES[r]} · dunia ${S.n}×${S.n}</p><div class="big">${S.score}</div>
   <div class="brk"><div><span>${S.act} aksi × −${COST}</span><b>${-S.act*COST}</b></div>${S.kills?`<div><span>Membunuh Wumpus${S.kills>1?` ×${S.kills}`:""}</span><b>+${S.kills*KILL}</b></div>`:""}<div><span>${good?"Pulang bawa emas":bonus<0?"Terbunuh":"Bonus"}</span><b>${bonus>0?"+":""}${bonus}</b></div></div>
-  <p class="note">${S.m==="sesi"?(running?`Skor dikirim. Sisa waktu ${fmtT(SES.endsAt-now())} — main lagi untuk memperbaiki skor terbaikmu.`:"Skor dikirim. Waktu sesi sudah habis."):"Mode latihan, tidak dihitung."}</p>
+  <p class="note">${S.m==="sesi"?(running?`Skor dikirim. Sisa waktu ${fmtT(SES.endsAt-now())} — main lagi untuk menambah total skormu.`:"Skor dikirim. Waktu sesi sudah habis."):"Mode latihan, tidak dihitung."}</p>
   <div class="row"><button class="pri" id="mAgain">${running||S.m!=="sesi"?"Main lagi":"Lihat hasil"}</button><button id="mHome">Beranda</button></div>`),r==="quit"?0:650);
 }
 $("modal").addEventListener("click",e=>{const id=e.target.id;
@@ -707,7 +707,7 @@ function toggleAim(){if(!S||S.over)return;if(S.arrow<1){say("Belum punya anak pa
 function toggleMark(){if(!S||S.over)return;markMode=!markMode;say(markMode?"Ketuk kotak gelap untuk memberi tanda W?, P?, atau OK.":hint());render()}
 $("dpad").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.dir!==undefined)press(+b.dataset.dir);else if(b.dataset.a==="grab")act("grab")});
 document.querySelector(".side").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const a=b.dataset.a;if(a==="aim")toggleAim();else if(a==="mark")toggleMark();else act(a)});
-$("btnQuit").onclick=()=>modal(`<h2>Menyerah?</h2><p class="note">${S.m==="sesi"?"Skor game ini tetap dikirim (tidak menurunkan skor terbaikmu).":"Game latihan akan diakhiri."}</p><div class="row"><button class="pri" id="mQuitYes">Ya, akhiri</button><button id="mNo">Lanjut main</button></div>`);
+$("btnQuit").onclick=()=>modal(`<h2>Menyerah?</h2><p class="note">${S.m==="sesi"?"Skor game ini tetap dikirim dan ikut dijumlahkan ke total.":"Game latihan akan diakhiri."}</p><div class="row"><button class="pri" id="mQuitYes">Ya, akhiri</button><button id="mNo">Lanjut main</button></div>`);
 const KEYDIR={ArrowRight:0,d:0,D:0,ArrowUp:1,w:1,W:1,ArrowLeft:2,a:2,A:2,ArrowDown:3,s:3,S:3};
 document.addEventListener("keydown",e=>{if(!$("modal").hidden){if(e.key==="Escape")closeModal();return}if($("vGame").hidden||!S)return;if(e.target.matches("input,select,textarea"))return;
  if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key;
@@ -818,12 +818,12 @@ function renderAdmin(){const d=adminData;if(!d)return;const s=d.session,st=s?s.s
  $("lStats").innerHTML=`<div><small>Pemain</small><b>${ps.length}</b></div><div><small>Sedang main</small><b>${playing}</b></div><div><small>Total game</small><b>${games}</b></div><div><small>Pulang bawa emas</small><b>${wins}</b></div>`;
  const ranked=ps.filter(p=>p.best!==null);
  $("lPodium").innerHTML=st==="lobby"?`<div class="lobbywall">${ps.map(p=>`<span class="lj">${av(p.name,34)}${esc(p.name)}</span>`).join("")||'<span class="note" style="color:#b9b8bf">Belum ada yang bergabung. Bagikan link game ke mahasiswa.</span>'}</div>`:podiumHTML(ranked.slice(0,3));
- $("lRank").innerHTML=st==="lobby"?"":[...ranked.slice(3),...ps.filter(p=>p.best===null)].map((r,i)=>`<li><span class="r">${r.best===null?"–":i+4}</span>${av(r.name)}<span class="nm"><b>${esc(r.name)}</b><small>${liveTxt(r)||`${r.games} game${r.wins?` · ${r.wins} menang`:""}`}</small></span><span class="sc">${r.best??"—"}</span></li>`).join("");
+ $("lRank").innerHTML=st==="lobby"?"":[...ranked.slice(3),...ps.filter(p=>p.best===null)].map((r,i)=>`<li><span class="r">${r.best===null?"–":i+4}</span>${av(r.name)}<span class="nm"><b>${esc(r.name)}</b><small>${liveTxt(r)||`${r.games} game${r.wins?` · ${r.wins} menang`:""}`}</small></span><span class="sc">${r.total??"—"}</span></li>`).join("");
  // live di podium
  document.querySelectorAll("#lPodium .pod").forEach((el,i)=>{});
  $("lFeed").innerHTML=feed.length?feed.map(f=>`<li><span class="fi">${f.icon}</span><span>${f.html}<small> · ${new Date(f.t).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})}</small></span></li>`).join(""):'<li class="note" style="color:#b9b8bf">Menunggu aktivitas…</li>';
  // kelola
- $("aBody").innerHTML=ps.length?ps.map((r,i)=>`<tr><td data-l="#">${r.best===null?"–":i+1}</td><td data-l="Nama"><b>${esc(r.name)}</b></td><td data-l="NIM">${esc(r.nim||(r.guest?"Guest":""))}</td><td data-l="Game" class="num">${r.games}</td><td data-l="Menang" class="num">${r.wins}</td><td data-l="Terbaik" class="num">${r.best??"—"}</td><td data-l=""><button data-del="${esc(r.key)}" data-name="${esc(r.name)}" style="min-height:36px;padding:6px 10px;font-size:13px;color:var(--red)">Hapus skor</button></td></tr>`).join(""):`<tr><td colspan="7" class="note">Belum ada pemain di sesi ini.</td></tr>`;
+ $("aBody").innerHTML=ps.length?ps.map((r,i)=>`<tr><td data-l="#">${r.best===null?"–":i+1}</td><td data-l="Nama"><b>${esc(r.name)}</b></td><td data-l="NIM">${esc(r.nim||(r.guest?"Guest":""))}</td><td data-l="Game" class="num">${r.games}</td><td data-l="Menang" class="num">${r.wins}</td><td data-l="Terbaik" class="num">${r.best??"—"}</td><td data-l="Total" class="num"><b>${r.total??"—"}</b></td><td data-l=""><button data-del="${esc(r.key)}" data-name="${esc(r.name)}" style="min-height:36px;padding:6px 10px;font-size:13px;color:var(--red)">Hapus skor</button></td></tr>`).join(""):`<tr><td colspan="8" class="note">Belum ada pemain di sesi ini.</td></tr>`;
  $("aClear").disabled=!s||!games}
 const FI={win:`<svg viewBox="0 0 100 100" width="22" height="22"><use href="#iGold"/></svg>`,pit:`<svg viewBox="0 0 100 100" width="22" height="22"><use href="#iPit"/></svg>`,wumpus:`<svg viewBox="0 0 100 100" width="22" height="22"><use href="#iWumpus"/></svg>`,
  climb:`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 21V3h10v18M7 8h10M7 13h10M7 18h10" stroke="#b9b8bf" stroke-width="2.2" fill="none"/></svg>`,quit:`<svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 21V4h11l-2 4 2 4H5" stroke="#b9b8bf" stroke-width="2.2" fill="none"/></svg>`,
@@ -835,7 +835,7 @@ function diffFeed(d){const ps=d.players||[],snap={};const ranked=ps.filter(p=>p.
    if(!o){if(d.session&&d.session.status==="lobby")add(FI.join,`<b>${n}</b> masuk lobby`);if(!p.games)return}
    const og=o?o.games:0;if(p.games>og&&p.last){const r=p.last.r;add(FI[r]||FI.quit,r==="win"?`<b>${n}</b> pulang membawa emas! <b>${p.last.s}</b>`:r==="pit"?`<b>${n}</b> jatuh ke lubang`:r==="wumpus"?`<b>${n}</b> dimakan Wumpus`:r==="climb"?`<b>${n}</b> keluar tanpa emas (${p.last.s})`:`<b>${n}</b> menyerah`)}
    if(p.best!==null&&(!o||o.best===null||p.best>o.best)&&(o&&o.best!==null))add(FI.best,`<b>${n}</b> memecahkan rekor pribadi: <b>${p.best}</b>`)});
-  if(leader&&leader!==prevSnap.leader){const p=ranked[0];add(FI.lead,`<b>${esc(p.name)}</b> memimpin dengan <b>${p.best}</b>!`)}
+  if(leader&&leader!==prevSnap.leader){const p=ranked[0];add(FI.lead,`<b>${esc(p.name)}</b> memimpin dengan total <b>${p.total}</b>!`)}
   feed=feed.slice(0,30)}
  prevSnap={map:snap,leader}}
 $("aActions").addEventListener("click",e=>{const op=e.target.dataset.op;if(!op)return;
@@ -846,7 +846,7 @@ $("aActions").addEventListener("click",e=>{const op=e.target.dataset.op;if(!op)r
  else if(op==="close")adminOp({op:"close"},"Sesi ditutup dari tampilan. Skor tetap tersimpan di Google Sheet.")});
 $("aBody").addEventListener("click",e=>{const k=e.target.dataset.del;if(!k)return;adminOp({op:"delplayer",key:k},`Semua skor ${esc(e.target.dataset.name)} di sesi ini akan dihapus permanen dari Google Sheet.`)});
 $("aClear").onclick=()=>adminOp({op:"clear"},"Semua skor di sesi ini akan dihapus permanen dari Google Sheet.");
-$("aCsv").onclick=()=>{const ps=(adminData&&adminData.players)||[];const csv=["Peringkat,Nama,NIM,Game,Menang,Skor terbaik",...ps.map((r,i)=>[r.best===null?"":i+1,`"${r.name.replace(/"/g,'""')}"`,r.nim,r.games,r.wins,r.best??""].join(","))].join("\n");
+$("aCsv").onclick=()=>{const ps=(adminData&&adminData.players)||[];const csv=["Peringkat,Nama,NIM,Game,Menang,Skor terbaik,Total skor",...ps.map((r,i)=>[r.best===null?"":i+1,`"${r.name.replace(/"/g,'""')}"`,r.nim,r.games,r.wins,r.best??"",r.total??""].join(","))].join("\n");
  navigator.clipboard.writeText(csv).then(()=>{$("aCsv").textContent="Tersalin!";setTimeout(()=>$("aCsv").textContent="Salin CSV",1500)}).catch(()=>modal(`<h2>Salin manual</h2><textarea style="width:100%;height:200px">${esc(csv)}</textarea><button id="mNo">Tutup</button>`))};
 
 /* ---------- mulai ---------- */

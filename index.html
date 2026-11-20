@@ -370,8 +370,8 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const K=(x,y)=>x+","+y;
 
 /* ---------- konfigurasi server ---------- */
-const API_URL="";   // ← tempel URL Web App Apps Script di sini (lihat README)
-const SHEET_URL=""; // ← opsional: URL Google Sheet, untuk tombol di dashboard admin
+const API_URL="https://script.google.com/macros/s/AKfycbyy686dNvlEe65RhC6GRTL-c7kbaRAG7Engt8vLZiitJhTIYyDI3loB6eIUIqP-JQmN/exec";   // ← tempel URL Web App Apps Script di sini (lihat README)
+const SHEET_URL="https://docs.google.com/spreadsheets/d/1n1mZZrQLJ7XZ7BP8wdfp5yxgR7E7AbKg5A36XPKCa_Q/edit"; // ← opsional: URL Google Sheet, untuk tombol di dashboard admin
 
 /* ---------- storage lokal ---------- */
 let LS={last:null,muted:false,size:5,adminKey:"",outbox:[]};

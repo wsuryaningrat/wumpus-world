@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wumpus World Tel-U</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: ceria, kompetitif, seperti game kampus di sela kuliah
+   IDEA: gua 4x4 dari slide Wumpus, dijelajahi mahasiswa berjaket almamater merah
+   PICTURE: papan gua dengan kabut, karakter anak Tel-U, monster Wumpus, lubang, emas
+   COLOUR and TYPE: merah Tel-U dominan, putih, abu batu; aksen emas. Baloo 2 + Nunito
+   LAYOUT: header merah, papan besar di tengah, kontrol jempol di bawah (HP) / samping (laptop) */
+:root{color-scheme:light dark;
+--red:#d7192a;--red-d:#9e0f1c;--red-l:light-dark(#fde8ea,#3a1216);
+--bg:light-dark(#f4f3f1,#141416);--card:light-dark(#ffffff,#1f1f23);--ink:light-dark(#1d1d20,#f1f0ee);
+--mut:light-dark(#6b6b72,#a9a8ae);--line:light-dark(#e3e1dd,#33333a);--gold:#f5b700;--gold-d:#a87a00;
+--rock:#2d2d33;--rock2:#3b3b43;--sand:light-dark(#efe7da,#5a5348);--ok:#1d9e75;--blue:#2a78d6}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3{font-family:"Baloo 2",Nunito,sans-serif;line-height:1.05;margin:0;text-wrap:balance}
+button,select,input{font:inherit;font-size:16px}
+button{cursor:pointer;border:0;border-radius:12px;min-height:44px;padding:10px 16px;font-weight:800;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pri{background:var(--red);color:#fff;box-shadow:0 4px 0 var(--red-d)}
+.pri:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 var(--red-d)}
+.gold{background:var(--gold);color:#3b2a00;box-shadow:0 4px 0 var(--gold-d)}
+select,input{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px}
+header{background:var(--red);color:#fff;padding:10px max(4vw,14px);display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 3px 0 var(--red-d)}
+header h1{font-size:26px;margin-right:auto;display:flex;align-items:center;gap:8px}
+header h1 svg{width:34px;height:34px}
+.chip{background:rgba(255,255,255,.16);border-radius:999px;padding:4px 12px;font-weight:800;font-size:14px;white-space:nowrap}
+main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:18px max(4vw,14px) 28px}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line)}
+.lab{font-size:13px;font-weight:800;color:var(--mut);margin:0 0 6px}
+.note{font-size:14px;color:var(--mut)}
+.banner{border-radius:12px;padding:10px 14px;font-size:14px;background:var(--red-l);color:light-dark(var(--red-d),#ffb3ba);margin-bottom:14px}
+footer{text-align:center;padding:14px;font-size:13px;color:var(--mut);border-top:1px solid var(--line)}
+footer b{color:var(--red)}
+.linkbtn{background:none;box-shadow:none;min-height:0;padding:0;font-weight:600;color:var(--mut);text-decoration:underline;font-size:13px}
+.btnlink{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:12px;font-weight:800;background:var(--gold);color:#3b2a00;text-decoration:none;box-shadow:0 4px 0 var(--gold-d)}
+[hidden]{display:none!important}
+/* home */
+.home{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+.hero{background:var(--rock);border-radius:22px;padding:22px 22px 0;color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.hero h2{font-size:clamp(34px,5vw,50px);color:#fff}.hero h2 span{color:var(--gold)}
+.hero p{color:#d9d8dc;max-width:34ch;margin:8px 0 0}
+.hero svg.scene{display:block;width:min(100%,380px);height:auto;margin:14px -22px 0 auto}
+.tabs{display:flex;gap:6px;background:var(--bg);padding:5px;border-radius:14px;margin-bottom:12px}
+.tabs button{flex:1;box-shadow:none;background:transparent}
+.tabs button[aria-selected=true]{background:var(--card);box-shadow:0 0 0 1.5px var(--line);color:var(--red)}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:6px 0 14px}
+.modes label{border:1.5px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;font-weight:800;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.modes label small{font-weight:600;color:var(--mut);font-size:12.5px}
+.modes label{position:relative}.modes input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+.modes label:has(input:checked){border-color:var(--red);background:var(--red-l)}
+.modes label:has(input:disabled){opacity:.45;cursor:not-allowed}
+.quota{display:flex;gap:6px;align-items:center;margin:4px 0 14px}
+.quota i{width:22px;height:22px;border-radius:50%;background:var(--red);display:block}
+.quota i.used{background:var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.lb{list-style:none;padding:0;margin:8px 0 0}
+.lb li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.lb li b{margin-left:auto;font-variant-numeric:tabular-nums}
+.lb .n{width:22px;color:var(--mut);font-weight:800}
+/* game */
+.game{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px 18px;align-items:start}
+#vGame .game{grid-template-areas:"gl gc" "gl gi";grid-template-rows:auto 1fr}.gl{grid-area:gl}.gc{grid-area:gc}.gi{grid-area:gi}
+.gc .percept{margin:10px 0 4px}.gc .msg{min-height:22px;margin:4px 0 0}
+@media (hover:none){.keys{display:none}}
+.boardwrap{background:var(--rock);border-radius:22px;padding:clamp(8px,1.6vw,16px);box-shadow:inset 0 0 0 4px #1f1f24}
+.board{position:relative;display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr)) auto;gap:6px;width:min(100%,560px);margin:0 auto}
+.ax{color:#9b9aa3;font-size:12px;font-weight:800;display:grid;place-items:center;padding:2px 4px}
+.cell{container-type:size;aspect-ratio:1;border-radius:12px;background:var(--rock2);position:relative;overflow:hidden;border:0;padding:0;min-height:0;box-shadow:inset 0 -5px 0 rgba(0,0,0,.25);color:#fff}
+.cell.seen{background:var(--sand);box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}
+.cell.start::after{content:"START";position:absolute;left:6%;bottom:3%;font-size:clamp(7px,12cqw,11px);font-weight:800;color:var(--red);opacity:.8}
+.cell .fog{position:absolute;inset:0;background:radial-gradient(circle at 30% 25%,#4a4a54,#2c2c33)}
+.cell svg.obj{position:absolute;inset:8%;width:84%;height:84%}
+.cell .pc{position:absolute;top:4px;right:4px;display:flex;gap:2px}
+.cell .pc svg{width:22cqw;height:22cqw}
+.cell .mk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:30cqw;color:#ffd15c;text-shadow:0 2px 0 #000}
+.cell .mk.ok{color:#7fe0bd}
+.agent{position:absolute;pointer-events:none;transition:left .22s ease,top .22s ease;z-index:3}
+.agent svg{width:100%;height:100%;filter:drop-shadow(0 4px 2px rgba(0,0,0,.35))}
+.agent .dir{position:absolute;width:30%;height:30%;background:var(--gold);border-radius:50%;display:grid;place-items:center;box-shadow:0 2px 0 var(--gold-d)}
+.agent .dir svg{width:70%;height:70%;filter:none}
+.agent.hurt{animation:shake .4s}
+@keyframes shake{25%{translate:-6px 0}75%{translate:6px 0}}
+.hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.hud div{background:var(--card);border-radius:14px;padding:8px 10px;box-shadow:0 0 0 1px var(--line)}
+.hud small{display:block;font-size:12px;color:var(--mut);font-weight:800}
+.hud b{font-family:"Baloo 2",Nunito,sans-serif;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.percept{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:12px 0}
+.percept span{border-radius:12px;padding:6px 2px;text-align:center;font-size:12px;font-weight:800;background:var(--bg);color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
+.percept span svg{width:26px;height:26px;opacity:.35}
+.percept span.on{background:var(--red-l);color:var(--ink)}.percept span.on svg{opacity:1}
+.vec{font-family:ui-monospace,monospace;font-size:13px;background:var(--bg);border-radius:10px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.console{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px;align-items:center}
+.dpad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:230px;width:100%;margin:0 auto}
+.dpad button{aspect-ratio:1;min-height:52px;padding:0;display:grid;place-items:center;background:var(--red);color:#fff;box-shadow:0 4px 0 var(--red-d);border-radius:14px}
+.dpad button:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 var(--red-d)}
+.dpad button svg{width:46%;height:46%}
+.dpad .mid{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);font-size:12px;display:flex;flex-direction:column;gap:0}
+.dpad .mid svg{width:42%;height:42%}
+.dpad.aim button:not(.mid){background:var(--gold);color:#3b2a00;box-shadow:0 4px 0 var(--gold-d)}
+.side{display:grid;gap:8px}
+.side button{display:flex;align-items:center;gap:8px;font-size:14px;justify-content:flex-start;padding:8px 12px}
+.side button svg{width:24px;height:24px;flex:none}
+.side button.on{box-shadow:inset 0 0 0 3px var(--gold);background:var(--gold);color:#3b2a00}
+.sound{flex:0 0 auto!important;min-height:40px;padding:6px 10px;font-size:13px}
+.log{max-height:190px;overflow:auto;font-size:13px;margin:10px 0 0;padding:0;list-style:none}
+.log li{padding:4px 0;border-top:1px solid var(--line)}
+.msg{min-height:24px;font-weight:800;color:var(--red);margin-top:8px}
+.keys{font-size:12.5px;color:var(--mut);margin-top:8px}
+kbd{background:var(--bg);border-radius:5px;padding:0 5px;box-shadow:0 1px 0 var(--line);font-family:inherit;font-weight:800}
+/* editor */
+.tools{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:12px 0}.tools button{padding:8px 2px;font-size:11.5px}
+.tools button[aria-pressed=true]{box-shadow:inset 0 0 0 3px var(--red);color:var(--red)}
+.tools button svg{width:28px;height:28px;display:block;margin:0 auto}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px;z-index:20}
+.modal .card{width:min(440px,100%);text-align:center}
+.modal h2{font-size:36px}.modal .big{font-family:"Baloo 2",Nunito,sans-serif;font-size:54px;font-weight:800;line-height:1}
+.brk{text-align:left;font-size:14px;margin:12px 0;border-top:1px solid var(--line)}
+.brk div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}
+/* admin */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.stats div{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 0 0 1px var(--line)}
+.stats small{color:var(--mut);font-weight:800;font-size:13px}.stats b{display:block;font-family:"Baloo 2",Nunito,sans-serif;font-size:32px;line-height:1.1}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;font-size:12.5px;color:var(--mut);padding:8px;border-bottom:2px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line);margin-right:6px}
+.dot.live{background:var(--ok);animation:pulse 1.2s infinite}.dot.on{background:var(--blue)}
+@keyframes pulse{50%{opacity:.35}}
+.scroll{overflow-x:auto}
+@media (max-width:900px){.game{grid-template-columns:minmax(0,1fr)}#vGame .game{grid-template-areas:"gl" "gc" "gi";grid-template-rows:auto}.gc,.gi{padding:14px}.home{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){header{flex-wrap:nowrap;padding:8px 12px}header h1{font-size:20px}header h1 svg{width:28px;height:28px}#hdrPlayer{max-width:46vw;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+ #vGame main,main:has(#vGame:not([hidden])){padding-top:10px}
+ #vGame .hud{gap:6px;margin-bottom:8px}#vGame .hud div{padding:5px 8px;border-radius:10px}#vGame .hud small{font-size:11px}#vGame .hud b{font-size:18px}
+ #vGame .gc h3{font-size:17px!important}#vGame .gc .row button{min-height:36px;padding:4px 10px;font-size:13px}
+ .gc .percept{gap:4px;margin:8px 0 2px}.gc .percept span{flex-direction:row;justify-content:center;padding:4px 2px;font-size:10.5px;gap:3px}.gc .percept span svg{width:16px;height:16px}
+ .gc .msg{font-size:14px;min-height:20px}.console{margin-top:6px;gap:10px}.dpad{gap:5px;max-width:200px}.dpad button{min-height:46px}.side button{min-height:42px;padding:6px 10px}.hero svg.scene{width:min(100%,330px)}.hud b{font-size:20px}
+ .stack thead{display:none}.stack tr{display:grid;padding:8px 0;border-bottom:1px solid var(--line)}.stack td{border:0;padding:3px 0 3px 7.5em;text-align:left}
+ .stack td::before{content:attr(data-l);float:left;width:7em;margin-left:-7.5em;color:var(--mut);font-size:12.5px;font-weight:800}.stack td:empty{display:none}}
+@media (prefers-reduced-motion:reduce){.agent{transition:none}.dot.live,.agent.hurt{animation:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <radialGradient id="gPit" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#000"/><stop offset=".7" stop-color="#111114"/><stop offset="1" stop-color="#55505a"/></radialGradient>
+  <symbol id="iStudent" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="95" rx="26" ry="4" fill="rgba(0,0,0,.25)"/>
+   <rect x="27" y="44" width="12" height="30" rx="6" fill="#6b4a2a"/>
+   <rect x="38" y="70" width="10" height="20" rx="4" fill="#7c7c86"/><rect x="52" y="70" width="10" height="20" rx="4" fill="#7c7c86"/>
+   <rect x="36" y="87" width="14" height="7" rx="3" fill="#fff"/><rect x="50" y="87" width="14" height="7" rx="3" fill="#fff"/>
+   <path d="M30 50q0-12 20-12t20 12v24H30z" fill="#d7192a"/>
+   <path d="M44 38l6 10 6-10" fill="#fff"/><rect x="48.5" y="47" width="3" height="27" fill="#9e0f1c"/>
+   <path d="M44 38l6 22M56 38l-6 22" stroke="#1f3b8a" stroke-width="2" fill="none"/>
+   <rect x="45" y="58" width="10" height="12" rx="2" fill="#fff" stroke="#bbb"/><rect x="47" y="60" width="6" height="3" fill="#d7192a"/>
+   <rect x="24" y="50" width="9" height="20" rx="4.5" fill="#d7192a"/><rect x="67" y="50" width="9" height="20" rx="4.5" fill="#d7192a"/>
+   <circle cx="28.5" cy="71" r="4" fill="#f2c39b"/><circle cx="71.5" cy="71" r="4" fill="#f2c39b"/>
+   <circle cx="50" cy="25" r="15" fill="#f2c39b"/>
+   <path d="M34 25q0-17 16-17t16 17q-4-8-16-8t-16 8z" fill="#1f1a17"/>
+   <circle cx="44" cy="26" r="2.2" fill="#1f1a17"/><circle cx="56" cy="26" r="2.2" fill="#1f1a17"/>
+   <path d="M45 32q5 4 10 0" stroke="#1f1a17" stroke-width="2" fill="none" stroke-linecap="round"/>
+   <circle cx="40" cy="30" r="2.5" fill="#f59a9a" opacity=".7"/><circle cx="60" cy="30" r="2.5" fill="#f59a9a" opacity=".7"/>
+  </symbol>
+  <symbol id="iWumpus" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="93" rx="32" ry="5" fill="rgba(0,0,0,.3)"/>
+   <path d="M30 30l-8-18 16 10zM70 30l8-18-16 10z" fill="#e8d9b5"/>
+   <path d="M18 60q0-34 32-34t32 34v20q-6 10-14 4-6 8-12 0-6 8-12 0-6 8-12 0-8 6-14-4z" fill="#6b2f6e"/>
+   <path d="M26 62q0-24 24-24t24 24" fill="#8a3f8d"/>
+   <circle cx="39" cy="54" r="8" fill="#fff"/><circle cx="61" cy="54" r="8" fill="#fff"/>
+   <circle cx="40" cy="55" r="4" fill="#1a1a1a"/><circle cx="60" cy="55" r="4" fill="#1a1a1a"/>
+   <path d="M33 70q17 10 34 0v4q-17 8-34 0z" fill="#2a0f2b"/>
+   <path d="M38 71l3 6 3-5 3 6 3-6 3 6 3-6 3 5 3-6" fill="#fff"/>
+  </symbol>
+  <symbol id="iWumpusDead" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="88" rx="34" ry="5" fill="rgba(0,0,0,.3)"/>
+   <path d="M16 80q0-26 34-26t34 26z" fill="#5a4a5c"/>
+   <path d="M33 64l8 8M41 64l-8 8M59 64l8 8M67 64l-8 8" stroke="#fff" stroke-width="3"/>
+  </symbol>
+  <symbol id="iPit" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="56" rx="42" ry="30" fill="#6e655c"/>
+   <ellipse cx="50" cy="56" rx="36" ry="24" fill="url(#gPit)"/>
+   <path d="M18 50q4-8 12-9M70 40q8 2 12 9" stroke="#8d8378" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="iGold" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="86" rx="32" ry="5" fill="rgba(0,0,0,.25)"/>
+   <path d="M18 80l8-18h20l8 18z" fill="#f5b700"/><path d="M46 80l8-18h20l8 18z" fill="#e0a400"/>
+   <path d="M32 62l8-18h20l8 18z" fill="#ffd34d"/><path d="M40 47h16" stroke="#fff6c9" stroke-width="3"/>
+   <path d="M72 22l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff3a8"/>
+  </symbol>
+  <symbol id="pStench" viewBox="0 0 24 24"><path d="M6 20c-3-4 3-6 0-10s3-6 0-8M12 20c-3-4 3-6 0-10s3-6 0-8M18 20c-3-4 3-6 0-10s3-6 0-8" stroke="#3aa655" stroke-width="2.4" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="pBreeze" viewBox="0 0 24 24"><path d="M2 8h12a3 3 0 1 0-3-3M2 13h17a3 3 0 1 1-3 3M2 18h8" stroke="#2a78d6" stroke-width="2.4" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="pGlitter" viewBox="0 0 24 24"><path d="M10 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2zM19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#f5b700"/></symbol>
+  <symbol id="pBump" viewBox="0 0 24 24"><path d="M3 3v18M6 12h12M14 7l5 5-5 5" stroke="#d7192a" stroke-width="2.4" fill="none" stroke-linecap="round" transform="rotate(180 12 12)"/></symbol>
+  <symbol id="pScream" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 8q3 4 0 8M19 5q6 7 0 14" stroke="#8a3f8d" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="iArrowItem" viewBox="0 0 100 100">
+   <ellipse cx="50" cy="80" rx="30" ry="5" fill="rgba(0,0,0,.25)"/>
+   <path d="M20 72L76 24" stroke="#7a5230" stroke-width="6" stroke-linecap="round"/>
+   <path d="M84 16l-4 20-16-16z" fill="#9aa3ad"/><path d="M84 16l-4 20-8-8z" fill="#c9d0d6"/>
+   <path d="M20 72l-6 4 2-10zM26 66l-10 2 6-8zM20 72l-2 10 8-6z" fill="#d7192a"/>
+  </symbol>
+  <symbol id="aArrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" stroke="#3b2a00" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+ </defs>
+</svg>
+
+<header>
+ <h1><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#iWumpus"/></svg>Wumpus World</h1>
+ <span class="chip" id="hdrPlayer" hidden></span>
+ <button id="btnAdmin" class="chip" style="min-height:34px;box-shadow:none;color:#fff" hidden>Admin</button>
+</header>
+
+<main>
+ <div class="banner" id="conn" hidden></div>
+
+ <!-- HOME -->
+ <section id="vHome">
+  <div class="home">
+   <div class="hero">
+    <h2>Masuk gua,<br>ambil <span>emas</span>,<br>pulang selamat.</h2>
+    <p>Bernalar dari stench dan breeze seperti agen di slide KBS. Setiap aksi −10, pulang bawa emas +1000, terbunuh −1000.</p>
+    <svg class="scene" viewBox="0 0 320 240" aria-hidden="true">
+     <rect x="20" y="40" width="300" height="200" rx="18" fill="#3b3b43"/>
+     <g opacity=".9"><rect x="34" y="54" width="62" height="62" rx="10" fill="#efe7da"/><rect x="104" y="54" width="62" height="62" rx="10" fill="#45454e"/><rect x="174" y="54" width="62" height="62" rx="10" fill="#45454e"/><rect x="244" y="54" width="62" height="62" rx="10" fill="#45454e"/>
+     <rect x="34" y="124" width="62" height="62" rx="10" fill="#efe7da"/><rect x="104" y="124" width="62" height="62" rx="10" fill="#efe7da"/><rect x="174" y="124" width="62" height="62" rx="10" fill="#45454e"/><rect x="244" y="124" width="62" height="62" rx="10" fill="#45454e"/></g>
+     <use href="#iWumpus" x="236" y="40" width="80" height="80"/>
+     <use href="#iGold" x="170" y="120" width="70" height="70"/>
+     <use href="#iPit" x="240" y="130" width="70" height="60"/>
+     <use href="#iStudent" x="96" y="96" width="96" height="96"/>
+     <use href="#pStench" x="140" y="62" width="22" height="22"/><use href="#pBreeze" x="212" y="134" width="22" height="22"/>
+    </svg>
+   </div>
+
+   <div class="card" id="setup">
+    <h3 style="font-size:24px;margin-bottom:12px">Siapa yang main?</h3>
+    <div class="tabs" role="tablist">
+     <button role="tab" id="tabMhs" aria-selected="true">Mahasiswa DS-49-03</button>
+     <button role="tab" id="tabGuest" aria-selected="false">Guest</button>
+    </div>
+    <div id="pMhs"><p class="lab">Pilih namamu (daftar presensi)</p><select id="selName"><option value="">— pilih nama —</option></select></div>
+    <div id="pGuest" hidden><p class="lab">Nama guest</p><input id="inGuest" maxlength="32" placeholder="Tulis namamu" autocomplete="off"></div>
+    <p class="note" id="lockNote" hidden></p>
+
+    <p class="lab" style="margin-top:14px">Peta</p>
+    <div class="modes">
+     <label><input type="radio" name="mode" value="random" checked>Peta acak<small>Dihitung kuota</small></label>
+     <label id="lblOfficial"><input type="radio" name="mode" value="official">Peta dosen<small id="offSmall">Belum diatur</small></label>
+     <label id="lblCustom" hidden><input type="radio" name="mode" value="custom">Custom map<small>Khusus dosen, tidak dihitung</small></label>
+    </div>
+    <div id="sizeRow"><p class="lab">Ukuran dunia (peta acak)</p><select id="selSize"><option value="4">4 × 4 (seperti slide)</option><option value="5">5 × 5 (default)</option><option value="6">6 × 6</option><option value="7">7 × 7</option><option value="8">8 × 8</option></select></div>
+    <p class="lab" style="margin-top:14px">Kuota game (maks 5)</p>
+    <div class="quota" id="quota"></div>
+    <div class="row"><button class="pri" id="btnPlay">Main</button><button id="btnEditor" hidden>Buat custom map</button></div>
+    <p class="note" id="playNote" style="margin:10px 0 0"></p>
+   </div>
+  </div>
+
+  <div class="home" style="margin-top:18px">
+   <div class="card">
+    <h3 style="font-size:22px">Cara main</h3>
+    <ul style="margin:8px 0 0;padding-left:20px;font-size:15px">
+     <li>Mulai di (1,1). Anak panah tidak dibawa dari awal: cari di dalam gua, lalu tekan Ambil.</li>
+     <li><b>Stench</b>: Wumpus ada di kotak sebelah. <b>Breeze</b>: lubang ada di kotak sebelah. <b>Glitter</b>: emas ada di kotakmu.</li>
+     <li><b>Bump</b>: menabrak dinding. <b>Scream</b>: panahmu mengenai Wumpus.</li>
+     <li>Laptop: tekan tombol panah (atau WASD) untuk langsung bergerak ke arah itu. HP: pakai tombol arah di layar. Keluar hanya bisa di (1,1).</li>
+     <li>Menembak: tekan Panah (atau <b>F</b>), lalu pilih arah. Di laptop juga bisa <b>Shift + panah</b>.</li>
+     <li>Suara otomatis berbunyi untuk stench, breeze, glitter, scream, dan saat menabrak dinding.</li>
+     <li>Setiap aksi −10. Keluar membawa emas +1000. Masuk lubang atau bertemu Wumpus hidup −1000.</li>
+     <li>Mode tandai (tanpa biaya): ketuk kotak untuk memberi tanda W?, P?, atau OK.</li>
+    </ul>
+   </div>
+   <div class="card"><h3 style="font-size:22px">Papan skor</h3><ol class="lb" id="lbHome"><li class="note">Belum ada skor.</li></ol></div>
+  </div>
+ </section>
+
+ <!-- GAME -->
+ <section id="vGame" hidden>
+  <div class="game">
+   <div class="gl">
+    <div class="hud">
+     <div><small>Skor</small><b id="hScore">0</b></div>
+     <div><small>Aksi</small><b id="hAct">0</b></div>
+     <div><small>Panah</small><b id="hArrow">1</b></div>
+     <div><small>Emas</small><b id="hGold">—</b></div>
+    </div>
+    <div class="boardwrap"><div class="board" id="board"></div></div>
+   </div>
+   <div class="card gc">
+    <div class="row" style="align-items:center"><h3 style="font-size:22px" id="gTitle">Peta acak</h3><button id="btnSound" class="sound" aria-pressed="true">Suara: on</button><button id="btnQuit" style="flex:0 0 auto">Menyerah</button></div>
+    <div class="percept" id="perc"></div>
+    <div class="msg" id="msg" aria-live="polite"></div>
+    <div class="console">
+     <div class="dpad" id="dpad">
+      <span></span><button data-dir="1" aria-label="Utara"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span></span>
+      <button data-dir="2" aria-label="Barat"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="mid" data-a="grab"><svg viewBox="0 0 24 24"><use href="#pGlitter"/></svg>Ambil</button>
+      <button data-dir="0" aria-label="Timur"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span></span><button data-dir="3" aria-label="Selatan"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span></span>
+     </div>
+     <div class="side">
+      <button data-a="aim" id="btnAim"><svg viewBox="0 0 24 24"><path d="M3 21L20 4M20 4h-7M20 4v7M3 21l3-1-2-2z" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Panah</span></button>
+      <button data-a="climb"><svg viewBox="0 0 24 24"><path d="M7 21V3h10v18M7 8h10M7 13h10M7 18h10" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>Keluar</button>
+      <button data-a="mark" id="btnMark"><svg viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linejoin="round"/></svg><span>Tandai</span></button>
+     </div>
+    </div>
+   </div>
+   <div class="card gi">
+    <div class="vec" id="vec">Percept: [None, None, None, None, None]</div>
+    <p class="keys"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> / <kbd>WASD</kbd> bergerak · <kbd>G</kbd> ambil · <kbd>F</kbd> lalu arah = tembak (atau <kbd>Shift</kbd>+panah) · <kbd>C</kbd> keluar · <kbd>M</kbd> tandai · <kbd>N</kbd> suara</p>
+    <p class="lab" style="margin-top:10px">Catatan agen (knowledge base)</p>
+    <ol class="log" id="log"></ol>
+   </div>
+  </div>
+ </section>
+
+ <!-- EDITOR -->
+ <section id="vEditor" hidden>
+  <div class="game">
+   <div class="boardwrap"><div class="board" id="eboard"></div></div>
+   <div class="card">
+    <h3 style="font-size:24px">Custom map</h3>
+    <p class="note" style="margin:6px 0 0">Pilih alat lalu ketuk kotak. Wumpus 1, emas 1, anak panah 0–1, lubang bebas. Kotak (1,1) harus kosong.</p>
+    <p class="lab" style="margin-top:12px">Ukuran dunia</p><select id="eSize"><option value="4">4 × 4</option><option value="5">5 × 5</option><option value="6">6 × 6</option><option value="7">7 × 7</option><option value="8">8 × 8</option></select>
+    <div class="tools" id="tools">
+     <button data-t="W" aria-pressed="true"><svg viewBox="0 0 100 100"><use href="#iWumpus"/></svg>Wumpus</button>
+     <button data-t="P" aria-pressed="false"><svg viewBox="0 0 100 100"><use href="#iPit"/></svg>Lubang</button>
+     <button data-t="G" aria-pressed="false"><svg viewBox="0 0 100 100"><use href="#iGold"/></svg>Emas</button>
+     <button data-t="A" aria-pressed="false"><svg viewBox="0 0 100 100"><use href="#iArrowItem"/></svg>Panah</button>
+     <button data-t="X" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Hapus</button>
+    </div>
+    <div class="row"><button id="ePreset">Peta slide</button><button id="eRandom">Acak</button><button id="eClear">Kosongkan</button></div>
+    <p class="msg" id="eMsg"></p>
+    <div class="row" style="margin-top:6px"><button class="pri" id="ePlay">Main latihan</button></div>
+    <div class="row" style="margin-top:8px" id="eAdminRow" hidden><button class="gold" id="eOfficial">Jadikan peta dosen</button><button id="eUnofficial">Hapus peta dosen</button></div>
+    <button id="eBack" style="width:100%;margin-top:8px">Kembali</button>
+   </div>
+  </div>
+ </section>
+
+ <!-- ADMIN -->
+ <section id="vAdmin" hidden>
+  <div class="row" style="align-items:center"><h2 style="font-size:34px">Livescore admin</h2><a id="aSheet" class="btnlink" target="_blank" rel="noopener" hidden>Buka Google Sheet</a><button id="aCsv" style="flex:0 0 auto">Salin CSV</button><button id="aLogout" style="flex:0 0 auto">Keluar admin</button><button id="aBack" style="flex:0 0 auto">Kembali</button></div>
+  <p class="note" id="aNote" style="margin:4px 0 0"></p>
+  <div class="stats" id="aStats"></div>
+  <div class="card scroll"><table class="stack"><thead><tr><th>#</th><th>Nama</th><th>NIM</th><th>Status</th><th class="num">Game</th><th class="num">Terbaik</th><th class="num">Terakhir</th><th class="num">Total</th><th></th></tr></thead><tbody id="aBody"></tbody></table></div>
+ </section>
+</main>
+
+<div class="modal" id="modal" hidden><div class="card" role="dialog" aria-modal="true" id="modalBox"></div></div>
+
+<footer>Developed by <b>WHS</b> (SoC – Telkom University) · <button id="btnAdminLogin" class="linkbtn">Admin</button></footer>
+
+<script>
+{
+const ROSTER=[["103052400035","Danniswara Wikramatunggad"],["103052400080","Muhammad Wijdan Fauzi"],["103052500005","Aqil Mujahid Sholahuddin"],["103052500006","Raja Asyraf Waalid"],["103052500007","Mayada Rose Cahya Dewi"],["103052500008","Dhiya Azmii"],["103052500015","Cyara Athallah Havie"],["103052500016","Galih Wijayanto"],["103052500019","Faustinus Justin Cia"],["103052500026","Pavel Xavier Rumengan"],["103052500029","Muhammad Rizki Rasyah"],["103052500030","Ahmad Yasyfi Iskandar"],["103052500041","Muhammad Taufiqurrahman S"],["103052500044","Firra Rahmania Azhar"],["103052500047","Tamimaqil Trinika Hibatul"],["103052500050","Inaya Putri Elysia"],["103052500052","Najla Zahra Pramesti"],["103052500058","Ningtyas Ayudya Larasati"],["103052500063","Muhammad Nabil"],["103052500068","Sulthan Dafa Arrahman"],["103052500071","Alyssa Nisrina Fiska"],["103052500072","Jauza Naila Zaahira"],["103052500077","Rafael Zefanya Sumeisey"],["103052500078","Nouval Rizaldy Susanto"],["103052500081","Kukuh Agung Tri Pamuji"],["103052500084","Naurah Althaf Fathinah"],["103052500085","Faiqa Sari Irfaningtyas"],["103052500087","Artanti Ayu Estiningtyas"],["103052500095","Mohamad Fikri Setiawan"],["103052500098","Ryan Azrya Altriyananda"],["103052500100","Adienda Anastasya Firsha"],["103052500102","Ibnu Zahwan El Faidh"],["103052530001","Akbar Anugrah Pratama"],["103052530004","Fathimah Azzahra"],["103052530005","Thalita Naomy Sitepu"],["103052530008","Guidomelvin"],["103052530011","Hilal Aufa Azhar"],["103052530014","Rahelia Gokma Siregar"],["103052530015","Tsuraya Rahma Aulia"],["103052530016","Bethania Chelsea Sormin"],["103052560001","Abrar Zamil"],["GM","Wahyu Suryaningrat (GM)"]];
+const MAXG=5, ADMIN_EMAIL="wahyusuryaningrat@gmail.com";
+const SLIDE={n:4,W:[1,3],G:[2,3],P:[[3,1],[3,3],[4,4]],A:[2,1]};
+const DIRS=[[1,0],[0,1],[-1,0],[0,-1]], DNAME=["timur","utara","barat","selatan"];
+const RES={win:"Pulang bawa emas",climb:"Keluar tanpa emas",pit:"Jatuh ke lubang",wumpus:"Dimakan Wumpus",quit:"Menyerah",playing:"Sedang main",left:"Tidak selesai"};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const K=(x,y)=>x+","+y;
+
+/* ---------- konfigurasi server ---------- */
+const API_URL="";   // ← tempel URL Web App Apps Script di sini (lihat README)
+const SHEET_URL=""; // ← opsional: URL Google Sheet, untuk tombol di dashboard admin
+
+/* ---------- storage lokal ---------- */
+let LS={last:null,muted:false,size:5,adminKey:"",outbox:[]};
+try{const v=JSON.parse(localStorage.getItem("wwgh_v1")||"null");if(v)LS=Object.assign(LS,v)}catch(e){}
+const saveLS=()=>{try{localStorage.setItem("wwgh_v1",JSON.stringify(LS))}catch(e){}};
+
+/* ---------- server (Google Apps Script) ---------- */
+let isAdmin=false,official=null,srv={used:0,games:[],board:[]},online=null;
+async function apiGet(params){if(!API_URL)throw new Error("noapi");const r=await fetch(API_URL+"?"+new URLSearchParams(params));return r.json()}
+async function apiPost(body){if(!API_URL)throw new Error("noapi");const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return r.json()}
+function connMsg(t){$("conn").hidden=!t;$("conn").textContent=t||""}
+function setOnline(v){online=v;connMsg(!API_URL?"Server skor belum diatur (API_URL kosong): game bisa dimainkan, tapi skor tidak tersimpan.":v===false?"Belum terhubung ke server skor. Periksa internet, lalu coba lagi.":"")}
+const keyOf=p=>p.nim?"nim:"+p.nim:"g:"+p.name.toLowerCase().replace(/[^a-z0-9]+/g,"-");
+let stateReq=0;
+async function loadState(){const p=currentPlayer(),my=++stateReq;if(!API_URL){setOnline(false);renderHome();return}
+ try{const r=await apiGet({a:"state",key:p?keyOf(p):""});if(my!==stateReq)return;if(!r.ok)throw new Error(r.err);srv=r;official=validMap(r.official)?r.official:null;setOnline(true)}
+ catch(e){if(my===stateReq)setOnline(false)}
+ if(my===stateReq)renderHome()}
+async function flushOutbox(){if(!API_URL||!LS.outbox.length)return;const keep=[];
+ for(const ev of LS.outbox){try{const r=await apiPost(ev);if(!r.ok&&/tidak ditemukan/.test(r.err||""))keep.push(ev)}catch(e){keep.push(ev)}}
+ LS.outbox=keep;saveLS()}
+
+/* ---------- views ---------- */
+function show(v){for(const s of ["vHome","vGame","vEditor","vAdmin"])$(s).hidden=s!==v;window.scrollTo(0,0);if(v==="vHome"){renderHome();loadState()}if(v==="vAdmin")pollAdmin()}
+function modal(html){$("modalBox").innerHTML=html;$("modal").hidden=false;const b=$("modalBox").querySelector("input,button");b&&b.focus()}
+function closeModal(){$("modal").hidden=true}
+
+/* ---------- home ---------- */
+const sel=$("selName");
+sel.insertAdjacentHTML("beforeend",ROSTER.map(([n,nm])=>`<option value="${n}">${esc(nm)}</option>`).join(""));
+let tab="mhs";
+function setTab(t){tab=t;$("tabMhs").setAttribute("aria-selected",t==="mhs");$("tabGuest").setAttribute("aria-selected",t==="guest");$("pMhs").hidden=t!=="mhs";$("pGuest").hidden=t!=="guest";renderHome();loadState()}
+$("tabMhs").onclick=()=>setTab("mhs");$("tabGuest").onclick=()=>setTab("guest");
+let guestT=null;sel.onchange=()=>{renderHome();loadState()};$("inGuest").oninput=()=>{renderHome();clearTimeout(guestT);guestT=setTimeout(loadState,600)};
+document.querySelectorAll("input[name=mode]").forEach(r=>r.onchange=renderHome);
+function currentPlayer(){
+ if(tab==="mhs"){const n=sel.value;if(!n)return null;const r=ROSTER.find(x=>x[0]===n);return{name:r[1],nim:n,guest:false}}
+ const g=$("inGuest").value.trim().replace(/\s+/g," ").slice(0,32);return g.length>=2?{name:g,nim:"",guest:true}:null}
+function mode(){return document.querySelector("input[name=mode]:checked").value}
+if(LS.last){if(LS.last.guest){tab="guest";$("inGuest").value=LS.last.name}else if(ROSTER.some(r=>r[0]===LS.last.nim))sel.value=LS.last.nim}
+$("tabMhs").setAttribute("aria-selected",tab==="mhs");$("tabGuest").setAttribute("aria-selected",tab==="guest");$("pMhs").hidden=tab!=="mhs";$("pGuest").hidden=tab!=="guest";
+
+function renderHome(){
+ $("lblCustom").hidden=!isAdmin;$("btnEditor").hidden=!isAdmin;if(!isAdmin&&mode()==="custom")document.querySelector("input[value=random]").checked=true;
+ $("lblOfficial").querySelector("input").disabled=!official;$("offSmall").textContent=official?`Dihitung kuota · ${N(official)}×${N(official)}`:"Belum diatur";
+ if(!official&&mode()==="official")document.querySelector("input[value=random]").checked=true;
+ $("sizeRow").hidden=mode()!=="random";
+ const p=currentPlayer(),m=mode(),used=p&&API_URL?srv.used||0:0;
+ $("quota").innerHTML=Array.from({length:MAXG},(_,i)=>`<i class="${i<used?"used":""}" title="Game ${i+1}"></i>`).join("")+`<span class="note" style="margin-left:6px">${p?`sisa ${Math.max(0,MAXG-used)} dari ${MAXG}`:"pilih nama dulu"}</span>`;
+ let why="";if(!p)why=tab==="mhs"?"Pilih namamu dulu.":"Tulis nama guest minimal 2 huruf.";
+ else if(m!=="custom"&&API_URL&&online===false)why="Tidak terhubung ke server skor. Periksa internet, lalu muat ulang halaman.";
+ else if(m!=="custom"&&API_URL&&used>=MAXG)why="Kuota 5 game untuk nama ini sudah habis. Terima kasih sudah bermain!";
+ else if(m==="custom"&&!customMap)why="Buat custom map dulu lewat tombol di sebelah.";
+ if(!starting){$("btnPlay").disabled=!!why;$("playNote").textContent=why}
+ const h=$("hdrPlayer");h.hidden=!p;h.textContent=p?p.name:"";
+ const b=srv.board||[];$("lbHome").innerHTML=b.length?b.slice(0,5).map((r,i)=>`<li><span class="n">${i+1}</span>${esc(r.name)}<b>${r.best}</b></li>`).join(""):`<li class="note">Belum ada skor.</li>`;
+}
+
+/* ---------- suara (Web Audio, disintesis) ---------- */
+let AC=null,NB=null;let muted=!!LS.muted;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==="suspended")AC.resume().catch(()=>{});return AC}
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>ac(),{once:true}));
+function noise(c){if(!NB){NB=c.createBuffer(1,c.sampleRate,c.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const s=c.createBufferSource();s.buffer=NB;s.loop=true;return s}
+function env(c,t,a,d,peak){const g=c.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d);g.connect(c.destination);return g}
+const SFX={
+ stench(c,t){const g=env(c,t,.04,.6,.16),f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=420;f.connect(g);
+  for(const det of [0,7]){const o=c.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(115+det,t);o.frequency.exponentialRampToValueAtTime(62+det,t+.6);
+   const l=c.createOscillator(),lg=c.createGain();l.frequency.value=7;lg.gain.value=14;l.connect(lg);lg.connect(o.frequency);o.connect(f);o.start(t);l.start(t);o.stop(t+.7);l.stop(t+.7)}},
+ breeze(c,t){const g=env(c,t,.18,.65,.22),f=c.createBiquadFilter();f.type="bandpass";f.Q.value=1.4;f.frequency.setValueAtTime(320,t);f.frequency.exponentialRampToValueAtTime(1500,t+.35);f.frequency.exponentialRampToValueAtTime(450,t+.85);
+  const n=noise(c);n.connect(f);f.connect(g);n.start(t);n.stop(t+.9)},
+ glitter(c,t){[1568,2093,2637,3136,4186].forEach((fq,i)=>{const s=t+i*.06,g=env(c,s,.005,.28,.09),o=c.createOscillator();o.type="sine";o.frequency.value=fq;o.connect(g);o.start(s);o.stop(s+.32)})},
+ scream(c,t){const g=env(c,t,.03,.9,.18),f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=1100;f.Q.value=1.6;f.connect(g);
+  const o=c.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(980,t);o.frequency.exponentialRampToValueAtTime(170,t+.9);
+  const l=c.createOscillator(),lg=c.createGain();l.frequency.value=11;lg.gain.value=45;l.connect(lg);lg.connect(o.frequency);o.connect(f);o.start(t);l.start(t);o.stop(t+.95);l.stop(t+.95)},
+ bump(c,t){const g=env(c,t,.004,.22,.55),o=c.createOscillator();o.type="sine";o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+.2);o.connect(g);o.start(t);o.stop(t+.25);
+  const g2=env(c,t,.002,.07,.25),f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=700;const n=noise(c);n.connect(f);f.connect(g2);n.start(t);n.stop(t+.1)},
+ pick(c,t){[880,1320].forEach((fq,i)=>{const s=t+i*.08,g=env(c,s,.005,.15,.12),o=c.createOscillator();o.type="triangle";o.frequency.value=fq;o.connect(g);o.start(s);o.stop(s+.2)})}
+};
+function play(list){if(muted||!list.length)return;const c=ac();if(!c)return;let t=c.currentTime+.03;for(const k of list){try{SFX[k](c,t)}catch(e){}t+=.34}}
+function perceptSounds(p){const l=[];if(p.bu)l.push("bump");if(p.sc)l.push("scream");if(p.st)l.push("stench");if(p.br)l.push("breeze");if(p.gl)l.push("glitter");return l}
+function setSound(){$("btnSound").textContent="Suara: "+(muted?"off":"on");$("btnSound").setAttribute("aria-pressed",!muted)}
+$("btnSound").onclick=()=>{muted=!muted;LS.muted=muted;saveLS();setSound();if(!muted)play(["pick"])};setSound();
+
+/* ---------- peta ---------- */
+const N=m=>m&&m.n>=4&&m.n<=8?m.n:4;
+const inB=(x,y,n)=>x>=1&&y>=1&&x<=n&&y<=n;
+const same=(a,b)=>a&&b&&a[0]===b[0]&&a[1]===b[1];
+function reachSet(m,avoidW){const n=N(m),pit=new Set(m.P.map(p=>K(...p)));const seen=new Set(["1,1"]),q=[[1,1]];
+ while(q.length){const [x,y]=q.shift();for(const [dx,dy] of DIRS){const nx=x+dx,ny=y+dy,k=K(nx,ny);if(!inB(nx,ny,n)||seen.has(k)||pit.has(k)||(avoidW&&same(m.W,[nx,ny])))continue;seen.add(k);q.push([nx,ny])}}return seen}
+function reachable(m){return !!m.G&&reachSet(m,false).has(K(...m.G))}
+function randomMap(n){
+ n=Math.min(8,Math.max(4,+n||4));
+ for(let k=0;k<1000;k++){
+  const cells=[];for(let x=1;x<=n;x++)for(let y=1;y<=n;y++)if(!(x+y<=3))cells.push([x,y]); // (1,1),(1,2),(2,1) bebas bahaya
+  const pits=cells.filter(()=>Math.random()<.18);if(pits.length<1||pits.length>Math.round(n*n*.22))continue;
+  const free=cells.filter(c=>!pits.some(p=>same(p,c)));if(free.length<3)continue;
+  const W=free[Math.floor(Math.random()*free.length)];const gf=free.filter(c=>!same(c,W));const G=gf[Math.floor(Math.random()*gf.length)];
+  const m={n,W,G,P:pits,A:null};if(!reachable(m))continue;
+  const R=[...reachSet(m,true)].map(s=>s.split(",").map(Number)).filter(c=>!(c[0]===1&&c[1]===1)&&!same(c,G));if(!R.length)continue;
+  m.A=R[Math.floor(Math.random()*R.length)];return m}
+ return JSON.parse(JSON.stringify(SLIDE))}
+function validMap(m){if(!m||!Array.isArray(m.W)||!Array.isArray(m.G)||!Array.isArray(m.P))return false;const n=N(m),o=[1,1];
+ return inB(...m.W,n)&&inB(...m.G,n)&&m.P.every(p=>inB(...p,n))&&!same(m.W,o)&&!same(m.G,o)&&!m.P.some(p=>same(p,o))&&(!m.A||(inB(...m.A,n)&&!same(m.A,o)))}
+
+/* ---------- game ---------- */
+let S=null,customMap=null,markMode=false,aimMode=false,lastAct=0;
+function newGame(map,m,gid,player){
+ const mp=JSON.parse(JSON.stringify(map));mp.n=N(mp);mp.A=mp.A||null;
+ S={map:mp,n:mp.n,m,x:1,y:1,d:0,arrow:0,arrowTaken:false,gold:false,wAlive:true,score:0,act:0,over:false,res:null,visited:new Set(["1,1"]),seen:{},marks:{},bump:false,scream:false,log:[],gid:null};
+ $("gTitle").textContent={random:"Peta acak",official:"Peta dosen",custom:"Custom map"}[m]+` ${S.n}×${S.n}`;
+ S.gid=gid||null;S.player=player||currentPlayer();liveSend(true);
+ markMode=false;aimMode=false;
+ perceive();addLog("Mulai di (1,1). Anak panah belum ada, cari di dalam gua.");show("vGame");buildBoard($("board"),false,S.n);render();say(hint());play(perceptSounds(S.cur));
+}
+const isPit=(x,y)=>S.map.P.some(p=>p[0]===x&&p[1]===y);
+const isW=(x,y)=>S.map.W[0]===x&&S.map.W[1]===y;
+const adj=(x,y)=>DIRS.map(([dx,dy])=>[x+dx,y+dy]).filter(([a,b])=>inB(a,b,S.n));
+function percAt(x,y){return{st:adj(x,y).some(c=>isW(...c))||isW(x,y),br:adj(x,y).some(c=>isPit(...c)),gl:!S.gold&&same(S.map.G,[x,y])}}
+const arrowHere=()=>!S.arrowTaken&&same(S.map.A,[S.x,S.y]);
+function perceive(){const p=percAt(S.x,S.y);S.cur={...p,bu:S.bump,sc:S.scream};S.seen[K(S.x,S.y)]={st:p.st,br:p.br,gl:p.gl}}
+const vecStr=p=>`[${p.st?"Stench":"None"}, ${p.br?"Breeze":"None"}, ${p.gl?"Glitter":"None"}, ${p.bu?"Bump":"None"}, ${p.sc?"Scream":"None"}]`;
+function addLog(t){S.log.unshift(t);if(S.log.length>80)S.log.pop()}
+function hint(){if(S.bump)return"Duk! Ada dinding.";if(S.scream)return"AAARGH! Terdengar teriakan Wumpus.";
+ const h=[];if(S.cur.gl)h.push("kilauan emas");if(arrowHere())h.push("anak panah tergeletak");return h.length?`Ada ${h.join(" dan ")} di sini. Tekan Ambil.`:""}
+
+function act(a,dir){
+ if(!S||S.over)return;
+ const now=performance.now();if(now-lastAct<110)return;lastAct=now;
+ if(a==="climb"&&!(S.x===1&&S.y===1)){say("Keluar hanya bisa dari kotak (1,1).");return}
+ if(a==="shoot"&&S.arrow<1){say("Belum punya anak panah. Cari dulu di dalam gua.");return}
+ S.bump=false;S.scream=false;S.score-=10;S.act++;let note="";
+ if(a==="move"){S.d=dir;const nx=S.x+DIRS[dir][0],ny=S.y+DIRS[dir][1];
+  if(!inB(nx,ny,S.n)){S.bump=true;note=`Ke ${DNAME[dir]} → menabrak dinding`}else{S.x=nx;S.y=ny;S.visited.add(K(nx,ny));note=`Ke ${DNAME[dir]} → (${nx},${ny})`}}
+ else if(a==="grab"){const got=[];if(!S.gold&&same(S.map.G,[S.x,S.y])){S.gold=true;got.push("emas")}if(arrowHere()){S.arrowTaken=true;S.arrow=1;got.push("anak panah")}
+  note=got.length?`Ambil → dapat ${got.join(" dan ")}!`:"Ambil → tidak ada apa-apa"}
+ else if(a==="shoot"){S.d=dir;S.arrow=0;let x=S.x,y=S.y,hit=false;while(true){x+=DIRS[dir][0];y+=DIRS[dir][1];if(!inB(x,y,S.n))break;if(S.wAlive&&isW(x,y)){hit=true;break}}
+  if(hit){S.wAlive=false;S.scream=true;note=`Panah ke ${DNAME[dir]} → Wumpus mati!`}else note=`Panah ke ${DNAME[dir]} → meleset`}
+ else if(a==="climb"){note=S.gold?"Keluar gua membawa emas":"Keluar gua tanpa emas"}
+ aimMode=false;perceive();addLog(`#${S.act} ${note} | ${vecStr(S.cur)}`);
+ if(a==="move"&&!S.bump){if(isPit(S.x,S.y))return end("pit");if(isW(S.x,S.y)&&S.wAlive)return end("wumpus")}
+ if(a==="climb")return end(S.gold?"win":"climb");
+ const snd=a==="move"?perceptSounds(S.cur):[];if(a==="shoot"&&S.scream)snd.push("scream");if(a==="grab"&&/dapat/.test(note))snd.push("pick");play(snd);
+ say(hint());render();liveSend();
+}
+function end(r){
+ S.over=true;S.res=r;let bonus=0;if(r==="win")bonus=1000;if(r==="pit"||r==="wumpus")bonus=-1000;S.score+=bonus;S.bonus=bonus;
+ if(r==="pit"||r==="wumpus"){const ag=document.querySelector("#board .agent");ag&&ag.classList.add("hurt");play([r==="pit"?"breeze":"scream","bump"])}
+ if(r==="win")play(["glitter","pick"]);
+ render(true);
+ reportEnd();
+ const good=r==="win";
+ setTimeout(()=>modal(`<h2 style="color:${good?"var(--ok)":"var(--red)"}">${good?"Berhasil!":r==="quit"?"Menyerah":r==="climb"?"Selamat, tapi…":"Game over"}</h2>
+  <p class="note" style="margin:4px 0 10px">${RES[r]} · dunia ${S.n}×${S.n}</p><div class="big">${S.score}</div>
+  <div class="brk"><div><span>${S.act} aksi × −10</span><b>${-S.act*10}</b></div><div><span>${good?"Pulang bawa emas":bonus<0?"Terbunuh":"Bonus"}</span><b>${bonus>0?"+":""}${bonus}</b></div></div>
+  <p class="note">${S.m==="custom"?"Mode latihan, tidak dihitung kuota.":!S.gid?"Server skor belum diatur: skor tidak tersimpan.":`Skor dikirim ke server. Sisa kuota: ${Math.max(0,MAXG-srv.used)} dari ${MAXG}`}</p>
+  <div class="row"><button class="pri" id="mAgain">Main lagi</button><button id="mHome">Beranda</button></div>`),r==="quit"?0:650);
+}
+$("modal").addEventListener("click",e=>{if(e.target.id==="mHome"){closeModal();show("vHome")}if(e.target.id==="mAgain"){closeModal();show("vHome");if(!$("btnPlay").disabled)$("btnPlay").click()}
+ if(e.target.id==="mQuitYes"){closeModal();end("quit")}if(e.target.id==="mNo")closeModal();if(e.target.id==="modal")closeModal()});
+function say(t){$("msg").textContent=t}
+
+/* ---------- papan ---------- */
+function buildBoard(el,editor,n){
+ el.style.gridTemplateColumns=`auto repeat(${n},minmax(0,1fr))`;el.style.gridTemplateRows=`repeat(${n},minmax(0,1fr)) auto`;el.style.gap=n>=7?"4px":n>=6?"5px":"6px";
+ let h="";for(let y=n;y>=1;y--){h+=`<div class="ax">${y}</div>`;for(let x=1;x<=n;x++)h+=`<button class="cell${x===1&&y===1?" start":""}" data-x="${x}" data-y="${y}" aria-label="Kotak ${x},${y}" style="border-radius:${n>=7?8:12}px"></button>`}
+ h+=`<div></div>`+Array.from({length:n},(_,i)=>`<div class="ax">${i+1}</div>`).join("");
+ if(!editor)h+=`<div class="agent" id="agent"><svg viewBox="0 0 100 100"><use href="#iStudent"/></svg><div class="dir" id="adir"><svg viewBox="0 0 24 24"><use href="#aArrow"/></svg></div></div>`;
+ el.innerHTML=h}
+const use=(id,cls="obj")=>`<svg class="${cls}" viewBox="0 0 100 100"><use href="#${id}"/></svg>`;
+const pic=(id)=>`<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`;
+function render(reveal){
+ for(const c of $("board").querySelectorAll(".cell")){const x=+c.dataset.x,y=+c.dataset.y,k=K(x,y),vis=S.visited.has(k),v=vis||reveal||S.over;
+  c.classList.toggle("seen",vis);let h="";
+  if(!v)h+=`<div class="fog"></div>`;
+  if(v){if(isPit(x,y))h+=use("iPit");if(isW(x,y))h+=use(S.wAlive?"iWumpus":"iWumpusDead");if(!S.gold&&same(S.map.G,[x,y]))h+=use("iGold");if(!S.arrowTaken&&same(S.map.A,[x,y]))h+=use("iArrowItem")}
+  const sn=S.seen[k];if(sn)h+=`<div class="pc">${sn.st?pic("pStench"):""}${sn.br?pic("pBreeze"):""}${sn.gl?pic("pGlitter"):""}</div>`;
+  const mk=S.marks[k];if(mk&&!vis&&!S.over)h+=`<span class="mk${mk==="OK"?" ok":""}">${mk}</span>`;
+  c.innerHTML=h}
+ placeAgent();
+ $("hScore").textContent=S.score;$("hAct").textContent=S.act;$("hArrow").textContent=S.arrow;$("hGold").textContent=S.gold?"Dibawa":"—";
+ const p=S.cur;$("perc").innerHTML=[["st","Stench","pStench"],["br","Breeze","pBreeze"],["gl","Glitter","pGlitter"],["bu","Bump","pBump"],["sc","Scream","pScream"]].map(([k,n,i])=>`<span class="${p[k]?"on":""}">${pic(i)}${n}</span>`).join("");
+ $("vec").textContent=`(${S.x},${S.y}) Percept: ${vecStr(p)}`;
+ $("log").innerHTML=S.log.map(t=>`<li>${esc(t)}</li>`).join("");
+ document.querySelectorAll("#dpad button,.side button").forEach(b=>{const a=b.dataset.a;b.disabled=S.over||(a==="aim"&&S.arrow<1)||(a==="climb"&&!(S.x===1&&S.y===1))});
+ $("dpad").classList.toggle("aim",aimMode);$("btnAim").classList.toggle("on",aimMode);$("btnAim").lastElementChild.textContent=aimMode?"Pilih arah":`Panah (${S.arrow})`;
+ $("btnMark").classList.toggle("on",markMode);$("btnMark").lastElementChild.textContent=markMode?"Tandai: aktif":"Tandai";
+ $("btnQuit").disabled=S.over;
+}
+function placeAgent(){const ag=$("agent"),cell=$("board").querySelector(`.cell[data-x="${S.x}"][data-y="${S.y}"]`);if(!ag||!cell)return;
+ ag.style.left=cell.offsetLeft+"px";ag.style.top=cell.offsetTop+"px";ag.style.width=cell.offsetWidth+"px";ag.style.height=cell.offsetHeight+"px";
+ const dp=[{right:"-6%",top:"35%"},{left:"35%",top:"-6%"},{left:"-6%",top:"35%"},{left:"35%",bottom:"-6%"}][S.d];const ad=$("adir");ad.style.left=ad.style.right=ad.style.top=ad.style.bottom="";Object.assign(ad.style,dp);ad.firstElementChild.style.transform=`rotate(${-90*S.d}deg)`;
+ ag.firstElementChild.style.transform=S.d===2?"scaleX(-1)":"";ag.style.opacity=S.over&&S.res==="pit"?.35:1}
+window.addEventListener("resize",()=>{if(S&&!$("vGame").hidden)placeAgent()});
+$("board").addEventListener("click",e=>{const c=e.target.closest(".cell");if(!c||!S||S.over||!markMode)return;const k=K(c.dataset.x,c.dataset.y);if(S.visited.has(k))return;
+ const order=[undefined,"W?","P?","OK"];S.marks[k]=order[(order.indexOf(S.marks[k])+1)%4];render()});
+function press(dir){if(aimMode)act("shoot",dir);else act("move",dir)}
+function toggleAim(){if(!S||S.over)return;if(S.arrow<1){say("Belum punya anak panah. Cari dulu di dalam gua.");return}aimMode=!aimMode;say(aimMode?"Pilih arah tembakan.":hint());render()}
+function toggleMark(){if(!S||S.over)return;markMode=!markMode;say(markMode?"Ketuk kotak gelap untuk memberi tanda W?, P?, atau OK.":hint());render()}
+$("dpad").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.dir!==undefined)press(+b.dataset.dir);else if(b.dataset.a==="grab")act("grab")});
+document.querySelector(".side").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const a=b.dataset.a;if(a==="aim")toggleAim();else if(a==="mark")toggleMark();else act(a)});
+$("btnQuit").onclick=()=>modal(`<h2>Menyerah?</h2><p class="note">${S.m==="custom"?"Game latihan akan diakhiri.":"Game ini tetap terhitung sebagai 1 kuota."}</p><div class="row"><button class="pri" id="mQuitYes">Ya, akhiri</button><button id="mNo">Lanjut main</button></div>`);
+const KEYDIR={ArrowRight:0,d:0,D:0,ArrowUp:1,w:1,W:1,ArrowLeft:2,a:2,A:2,ArrowDown:3,s:3,S:3};
+document.addEventListener("keydown",e=>{if(!$("modal").hidden){if(e.key==="Escape")closeModal();return}if($("vGame").hidden||!S)return;if(e.target.matches("input,select,textarea"))return;
+ if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key;
+ if(k in KEYDIR){e.preventDefault();if(e.repeat)return;if(e.shiftKey&&k.startsWith("Arrow")){if(S.arrow<1)return say("Belum punya anak panah.");act("shoot",KEYDIR[k])}else press(KEYDIR[k]);return}
+ const l=k.toLowerCase();if(e.repeat)return;
+ if(l==="g"||k===" "){e.preventDefault();act("grab")}else if(l==="f")toggleAim();else if(l==="c")act("climb");else if(l==="m")toggleMark();else if(l==="n")$("btnSound").click();else if(k==="Escape"&&aimMode){aimMode=false;say(hint());render()}});
+
+/* ---------- play ---------- */
+let starting=false;
+$("btnPlay").onclick=async()=>{const p=currentPlayer();if(!p||starting)return;const m=mode();LS.last=p;saveLS();
+ const map=m==="random"?randomMap($("selSize").value):m==="official"?official:customMap;if(!validMap(map))return say("Peta tidak valid.");
+ if(m==="custom"||!API_URL){newGame(map,m,null,p);return}
+ starting=true;$("btnPlay").disabled=true;$("btnPlay").textContent="Menghubungkan…";
+ const gid=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+ try{const r=await apiPost({op:"start",gid,name:p.name,nim:p.nim,guest:p.guest,mode:m,n:N(map)});
+  if(!r.ok){if(r.err==="quota"){srv.used=r.used;$("playNote").textContent="Kuota 5 game untuk nama ini sudah habis."}else $("playNote").textContent="Server menolak: "+r.err}
+  else{srv.used=r.used;setOnline(true);newGame(map,m,gid,p)}}
+ catch(e){setOnline(false);$("playNote").textContent="Tidak bisa terhubung ke server skor. Coba lagi."}
+ finally{starting=false;$("btnPlay").textContent="Main";if(!$("vHome").hidden)renderHome()}};
+$("selSize").value=String(LS.size||5);$("selSize").onchange=()=>{LS.size=+$("selSize").value;saveLS()};
+
+/* ---------- editor ---------- */
+let E={n:5,W:[4,4],G:[3,4],P:[[3,2]],A:[2,3]},tool="W";
+function openEditor(){if(customMap)E=JSON.parse(JSON.stringify(customMap));E.n=N(E);$("eSize").value=String(E.n);show("vEditor");buildBoard($("eboard"),true,E.n);renderEditor()}
+$("btnEditor").onclick=()=>{if(isAdmin)openEditor()};
+$("eSize").onchange=()=>{const n=+$("eSize").value;E.n=n;const ok=c=>c&&inB(c[0],c[1],n);if(!ok(E.W))E.W=null;if(!ok(E.G))E.G=null;if(!ok(E.A))E.A=null;E.P=E.P.filter(ok);buildBoard($("eboard"),true,n);renderEditor()};
+$("eBack").onclick=()=>show("vHome");
+$("tools").onclick=e=>{const b=e.target.closest("button");if(!b)return;tool=b.dataset.t;$("tools").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b))};
+$("eboard").onclick=e=>{const c=e.target.closest(".cell");if(!c)return;const x=+c.dataset.x,y=+c.dataset.y;
+ if(x===1&&y===1){$("eMsg").textContent="Kotak (1,1) harus kosong (tempat mulai).";return}
+ const clr=()=>{E.P=E.P.filter(p=>!(p[0]===x&&p[1]===y));for(const t of ["W","G","A"])if(same(E[t],[x,y]))E[t]=null};
+ if(tool==="X")clr();else if(tool==="P"){const has=E.P.some(p=>p[0]===x&&p[1]===y);clr();if(!has)E.P.push([x,y])}else{clr();E[tool]=[x,y]}
+ renderEditor()};
+function rebuildE(){$("eSize").value=String(E.n);buildBoard($("eboard"),true,E.n);renderEditor()}
+$("ePreset").onclick=()=>{E=JSON.parse(JSON.stringify(SLIDE));rebuildE()};
+$("eRandom").onclick=()=>{E=randomMap(+$("eSize").value);rebuildE()};
+$("eClear").onclick=()=>{E={n:+$("eSize").value,W:null,G:null,P:[],A:null};renderEditor()};
+function editorOk(){if(!E.W)return"Letakkan 1 Wumpus.";if(!E.G)return"Letakkan 1 emas.";if(!reachable(E))return"Emas tidak bisa dicapai: semua jalan tertutup lubang.";if(E.A&&!reachSet(E,false).has(K(...E.A)))return"Anak panah tertutup lubang dan tidak bisa diambil.";return""}
+function renderEditor(){
+ for(const c of $("eboard").querySelectorAll(".cell")){const x=+c.dataset.x,y=+c.dataset.y;let h="";c.classList.add("seen");
+  if(E.P.some(p=>p[0]===x&&p[1]===y))h+=use("iPit");if(same(E.W,[x,y]))h+=use("iWumpus");if(same(E.G,[x,y]))h+=use("iGold");if(same(E.A,[x,y]))h+=use("iArrowItem");
+  if(x===1&&y===1)h+=use("iStudent");c.innerHTML=h}
+ const err=editorOk();$("eMsg").textContent=err||(E.A?"":"Tanpa anak panah: pemain tidak bisa menembak.");$("ePlay").disabled=!!err;$("eAdminRow").hidden=!isAdmin;$("eOfficial").disabled=!!err||!API_URL;$("eUnofficial").disabled=!official||!API_URL}
+$("ePlay").onclick=()=>{if(!isAdmin)return;customMap=JSON.parse(JSON.stringify(E));document.querySelector("input[value=custom]").checked=true;const p=currentPlayer();if(!p){show("vHome");$("playNote").textContent="Pilih nama dulu, lalu tekan Main.";return}newGame(customMap,"custom")};
+$("eOfficial").onclick=async()=>{try{const r=await apiPost({op:"setmap",k:LS.adminKey,map:E});if(!r.ok)throw new Error(r.err);official=JSON.parse(JSON.stringify(E));renderEditor();$("eMsg").textContent="Peta dosen tersimpan. Pemain kini bisa memilih Peta dosen."}catch(e){$("eMsg").textContent="Gagal menyimpan: "+e.message}};
+$("eUnofficial").onclick=async()=>{try{const r=await apiPost({op:"setmap",k:LS.adminKey,map:null});if(!r.ok)throw new Error(r.err);official=null;renderEditor();$("eMsg").textContent="Peta dosen dihapus."}catch(e){$("eMsg").textContent="Gagal: "+e.message}};
+
+/* ---------- livescore ---------- */
+let liveT=0,liveTimer=null;
+function liveSend(force){if(!API_URL||!S||!S.gid||S.over)return;const now=Date.now();
+ if(!force&&now-liveT<4000){clearTimeout(liveTimer);liveTimer=setTimeout(()=>liveSend(true),4000-(now-liveT));return}
+ liveT=now;const p=S.player;apiPost({op:"live",name:p.name,nim:p.nim,s:S.score,ac:S.act,x:S.x,y:S.y,n:S.n,g:S.gold,m:S.m}).catch(()=>{})}
+function reportEnd(){if(!S.gid)return;clearTimeout(liveTimer);LS.outbox.push({op:"end",gid:S.gid,r:S.res,s:S.score,ac:S.act});saveLS();srv.games=(srv.games||[]).concat([{id:S.gid,r:S.res,s:S.score}]);flushOutbox()}
+
+/* ---------- admin ---------- */
+$("btnAdminLogin").onclick=()=>{if(isAdmin){show("vAdmin");return}
+ modal(`<h2>Masuk admin</h2><p class="note">Masukkan kunci admin (ADMIN_KEY dari Apps Script).</p><input id="mKey" type="password" autocomplete="current-password" style="margin-top:8px"><p class="msg" id="mKeyMsg"></p><div class="row"><button class="pri" id="mKeyOk">Masuk</button><button id="mNo">Batal</button></div>`)};
+async function tryAdmin(k,silent){try{const r=await apiGet({a:"admin",k});if(r.ok){isAdmin=true;LS.adminKey=k;saveLS();$("btnAdmin").hidden=false;adminData=r;renderHome();return true}
+  if(!silent)$("mKeyMsg").textContent="Kunci admin salah.";if(silent){LS.adminKey="";saveLS()}}catch(e){if(!silent)$("mKeyMsg").textContent="Tidak bisa terhubung ke server."}return false}
+$("modal").addEventListener("click",async e=>{if(e.target.id==="mKeyOk"){const k=$("mKey").value.trim();if(!k)return;if(await tryAdmin(k,false)){closeModal();show("vAdmin")}}});
+$("modal").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="mKey")$("mKeyOk").click()});
+$("btnAdmin").onclick=()=>show("vAdmin");$("aBack").onclick=()=>show("vHome");
+$("aLogout").onclick=()=>{isAdmin=false;LS.adminKey="";saveLS();$("btnAdmin").hidden=true;show("vHome")};
+if(SHEET_URL){$("aSheet").href=SHEET_URL;$("aSheet").hidden=false}
+let adminData=null,adminTimer=null;
+async function pollAdmin(){clearTimeout(adminTimer);if($("vAdmin").hidden||!isAdmin)return;
+ try{const r=await apiGet({a:"admin",k:LS.adminKey});if(r.ok){adminData=r;renderAdmin();$("aNote").textContent="Livescore diperbarui setiap 4 detik. Semua skor tersimpan di Google Sheet (tab Games dan Rekap)."}else $("aNote").textContent="Server: "+r.err}
+ catch(e){$("aNote").textContent="Gagal memuat data dari server, mencoba lagi…"}
+ adminTimer=setTimeout(pollAdmin,4000)}
+function renderAdmin(){if(!adminData)return;const now=adminData.now||Date.now();
+ const rows=(adminData.players||[]).slice().sort((a,b)=>(b.best??-1e9)-(a.best??-1e9));
+ const isLive=p=>p.live&&now-p.live.t<120000;
+ const finished=rows.reduce((a,p)=>a+p.games.filter(g=>g.r!=="playing").length,0),top=rows.find(r=>r.best!==null);
+ $("aStats").innerHTML=`<div><small>Pemain</small><b>${rows.length}</b></div><div><small>Sedang main</small><b>${rows.filter(isLive).length}</b></div><div><small>Game selesai</small><b>${finished}</b></div><div><small>Skor tertinggi</small><b>${top?top.best:"—"}</b></div>`;
+ $("aBody").innerHTML=rows.length?rows.map((r,i)=>{const lv=isLive(r);const st=lv?`<span class="dot live"></span>Main ${r.live.n}×${r.live.n} · skor ${r.live.s} · ${r.live.a} aksi · (${r.live.x},${r.live.y})${r.live.g?" · bawa emas":""}`:r.games.some(g=>g.r==="playing")?`<span class="dot on"></span>Game belum selesai`:`<span class="dot"></span>Selesai`;
+  return`<tr><td data-l="#">${i+1}</td><td data-l="Nama"><b>${esc(r.name)}</b></td><td data-l="NIM">${esc(r.nim||(r.guest?"Guest":""))}</td><td data-l="Status">${st}</td><td data-l="Game" class="num">${r.played}/${MAXG}</td><td data-l="Terbaik" class="num">${r.best??"—"}</td><td data-l="Terakhir" class="num">${r.last??"—"}</td><td data-l="Total" class="num">${r.total}</td><td data-l=""><button data-reset="${esc(r.key)}" data-name="${esc(r.name)}" style="min-height:36px;padding:6px 10px;font-size:13px">Reset kuota</button></td></tr>`}).join(""):`<tr><td colspan="9" class="note">Belum ada pemain.</td></tr>`;
+ window._adminRows=rows}
+$("aBody").addEventListener("click",e=>{const id=e.target.dataset.reset;if(!id)return;
+ modal(`<h2>Reset kuota?</h2><p class="note">${esc(e.target.dataset.name)} bisa main 5 game lagi. Riwayat lama tetap ada di Sheet dengan status "reset".</p><div class="row"><button class="pri" id="mReset" data-id="${esc(id)}">Reset</button><button id="mNo">Batal</button></div>`)});
+$("modal").addEventListener("click",async e=>{if(e.target.id!=="mReset")return;const id=e.target.dataset.id;closeModal();
+ try{const r=await apiPost({op:"reset",k:LS.adminKey,key:id});if(!r.ok)throw new Error(r.err);pollAdmin()}catch(err){modal(`<h2>Gagal</h2><p class="note">${esc(err.message)}</p><button id="mNo">Tutup</button>`)}});
+$("aCsv").onclick=()=>{const rows=window._adminRows||[];const csv=["Nama,NIM,Game,Terbaik,Terakhir,Total",...rows.map(r=>[`"${r.name.replace(/"/g,'""')}"`,r.nim,r.played,r.best??"",r.last??"",r.total].join(","))].join("\n");
+ navigator.clipboard.writeText(csv).then(()=>{$("aCsv").textContent="Tersalin!";setTimeout(()=>$("aCsv").textContent="Salin CSV",1500)}).catch(()=>modal(`<h2>Salin manual</h2><textarea style="width:100%;height:200px">${esc(csv)}</textarea><button id="mNo">Tutup</button>`))};
+
+/* ---------- mulai ---------- */
+setOnline(null);renderHome();loadState();flushOutbox();setInterval(flushOutbox,20000);
+if(LS.adminKey&&API_URL)tryAdmin(LS.adminKey,true);
+
+}
+</script>
+</body>
+</html>

@@ -37,7 +37,7 @@ function sheet_(n) { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName
 function isAdmin_(k) { var a = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY'); return !!a && String(k || '') === a; }
 function clean_(s, n) { return String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n || 60); }
 function keyOf_(nim, name) { nim = clean_(nim, 20); return nim ? 'nim:' + nim : 'g:' + clean_(name, 40).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
-function expected_(r, a) { return -10 * a + (r === 'win' ? 1000 : (r === 'pit' || r === 'wumpus') ? -1000 : 0); }
+function expected_(r, a) { return -5 * a + (r === 'win' ? 1000 : (r === 'pit' || r === 'wumpus') ? -1000 : 0); }
 var RESULTS = { win: 1, climb: 1, pit: 1, wumpus: 1, quit: 1 };
 
 function rows_() {

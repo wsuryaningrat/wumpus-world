@@ -226,7 +226,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
   <div class="home">
    <div class="hero">
     <h2>Masuk gua,<br>ambil <span>emas</span>,<br>pulang selamat.</h2>
-    <p>Bernalar dari stench dan breeze seperti agen di slide KBS. Setiap aksi −10, pulang bawa emas +1000, terbunuh −1000.</p>
+    <p>Bernalar dari stench dan breeze seperti agen di slide KBS. Setiap aksi −5, pulang bawa emas +1000, terbunuh −1000.</p>
     <svg class="scene" viewBox="0 0 320 240" aria-hidden="true">
      <rect x="20" y="40" width="300" height="200" rx="18" fill="#3b3b43"/>
      <g opacity=".9"><rect x="34" y="54" width="62" height="62" rx="10" fill="#efe7da"/><rect x="104" y="54" width="62" height="62" rx="10" fill="#45454e"/><rect x="174" y="54" width="62" height="62" rx="10" fill="#45454e"/><rect x="244" y="54" width="62" height="62" rx="10" fill="#45454e"/>
@@ -273,7 +273,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
      <li>Laptop: tekan tombol panah (atau WASD) untuk langsung bergerak ke arah itu. HP: pakai tombol arah di layar. Keluar hanya bisa di (1,1).</li>
      <li>Menembak: tekan Panah (atau <b>F</b>), lalu pilih arah. Di laptop juga bisa <b>Shift + panah</b>.</li>
      <li>Suara otomatis berbunyi untuk stench, breeze, glitter, scream, dan saat menabrak dinding.</li>
-     <li>Setiap aksi −10. Keluar membawa emas +1000. Masuk lubang atau bertemu Wumpus hidup −1000.</li>
+     <li>Setiap aksi −5. Keluar membawa emas +1000. Masuk lubang atau bertemu Wumpus hidup −1000.</li>
      <li>Mode tandai (tanpa biaya): ketuk kotak untuk memberi tanda W?, P?, atau OK.</li>
     </ul>
    </div>
@@ -502,7 +502,7 @@ function act(a,dir){
  const now=performance.now();if(now-lastAct<110)return;lastAct=now;
  if(a==="climb"&&!(S.x===1&&S.y===1)){say("Keluar hanya bisa dari kotak (1,1).");return}
  if(a==="shoot"&&S.arrow<1){say("Belum punya anak panah. Cari dulu di dalam gua.");return}
- S.bump=false;S.scream=false;S.score-=10;S.act++;let note="";
+ S.bump=false;S.scream=false;S.score-=5;S.act++;let note="";
  if(a==="move"){S.d=dir;const nx=S.x+DIRS[dir][0],ny=S.y+DIRS[dir][1];
   if(!inB(nx,ny,S.n)){S.bump=true;note=`Ke ${DNAME[dir]} → menabrak dinding`}else{S.x=nx;S.y=ny;S.visited.add(K(nx,ny));note=`Ke ${DNAME[dir]} → (${nx},${ny})`}}
  else if(a==="grab"){const got=[];if(!S.gold&&same(S.map.G,[S.x,S.y])){S.gold=true;got.push("emas")}if(arrowHere()){S.arrowTaken=true;S.arrow=1;got.push("anak panah")}
@@ -525,7 +525,7 @@ function end(r){
  const good=r==="win";
  setTimeout(()=>modal(`<h2 style="color:${good?"var(--ok)":"var(--red)"}">${good?"Berhasil!":r==="quit"?"Menyerah":r==="climb"?"Selamat, tapi…":"Game over"}</h2>
   <p class="note" style="margin:4px 0 10px">${RES[r]} · dunia ${S.n}×${S.n}</p><div class="big">${S.score}</div>
-  <div class="brk"><div><span>${S.act} aksi × −10</span><b>${-S.act*10}</b></div><div><span>${good?"Pulang bawa emas":bonus<0?"Terbunuh":"Bonus"}</span><b>${bonus>0?"+":""}${bonus}</b></div></div>
+  <div class="brk"><div><span>${S.act} aksi × −5</span><b>${-S.act*5}</b></div><div><span>${good?"Pulang bawa emas":bonus<0?"Terbunuh":"Bonus"}</span><b>${bonus>0?"+":""}${bonus}</b></div></div>
   <p class="note">${S.m==="custom"?"Mode latihan, tidak dihitung kuota.":!S.gid?"Server skor belum diatur: skor tidak tersimpan.":`Skor dikirim ke server. Sisa kuota: ${Math.max(0,MAXG-srv.used)} dari ${MAXG}`}</p>
   <div class="row"><button class="pri" id="mAgain">Main lagi</button><button id="mHome">Beranda</button></div>`),r==="quit"?0:650);
 }

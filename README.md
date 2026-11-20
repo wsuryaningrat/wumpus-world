@@ -9,7 +9,7 @@ Developed by **WHS** (SoC – Telkom University)
 - Dunia N×N (default 5×5, bisa 4×4 sampai 8×8), mulai di (1,1).
 - Percept: Stench (Wumpus di sebelah), Breeze (lubang di sebelah), Glitter (emas di kotak ini), Bump (menabrak dinding), Scream (Wumpus terkena panah).
 - Anak panah tidak dibawa dari awal: harus ditemukan di dalam gua lalu diambil.
-- Setiap aksi −10, keluar membawa emas +1000, terbunuh (lubang / Wumpus hidup) −1000.
+- Setiap aksi −5, keluar membawa emas +1000, terbunuh (lubang / Wumpus hidup) −1000.
 - Kuota 5 game per pemain (per NIM, atau per nama untuk guest), dicek di server.
 
 ## Isi repo
@@ -68,5 +68,5 @@ Kontrol: tombol panah / WASD untuk bergerak, `G` ambil, `F` lalu arah untuk mene
 
 - Jika `Code.gs` diubah, buat versi baru lewat **Deploy → Manage deployments → Edit → Version: New version** agar URL tetap sama.
 - Pemain tidak login, jadi siapa pun bisa memilih nama orang lain. Kuota tetap terkunci per NIM di server.
-- Validasi skor di server (skor harus sama dengan −10 × aksi + bonus) mencegah perubahan sembarangan, tapi bukan pengaman penuh terhadap pemain yang memanipulasi kode halaman.
+- Validasi skor di server (skor harus sama dengan −5 × aksi + bonus) mencegah perubahan sembarangan, tapi bukan pengaman penuh terhadap pemain yang memanipulasi kode halaman.
 - Kapasitas: livescore memakai cache Apps Script, bukan Sheet. Setiap pemain mengirim status paling sering setiap 4 detik, sehingga 40 pemain bersamaan masih jauh di bawah batas eksekusi Apps Script.

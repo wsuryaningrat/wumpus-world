@@ -9,8 +9,9 @@ Developed by **WHS** (SoC – Telkom University)
 - Dunia N×N (default 5×5, bisa 4×4 sampai 8×8), mulai di (1,1).
 - Percept: Stench (Wumpus di sebelah), Breeze (lubang di sebelah), Glitter (emas di kotak ini), Bump (menabrak dinding), Scream (Wumpus terkena panah).
 - Anak panah tidak dibawa dari awal: harus ditemukan di dalam gua lalu diambil.
-- Setiap aksi −5, keluar membawa emas +1000, terbunuh (lubang / Wumpus hidup) −1000.
-- Kuota 5 game per pemain (per NIM, atau per nama untuk guest), dicek di server.
+- Setiap aksi −5, keluar membawa emas +1000, membunuh Wumpus dengan panah +3000, terbunuh (lubang / Wumpus hidup) −1000.
+- Default: 2 lubang dan 1 Wumpus. Dosen bisa mengubah ukuran dunia, jumlah lubang, jumlah Wumpus (1–3), atau memakai peta tetap.
+- Main dalam **sesi berwaktu**: dosen membuka lobby, mahasiswa bergabung, dosen menekan Mulai. Selama waktu sesi (misalnya 5 menit) mahasiswa boleh main berkali-kali; yang dihitung skor terbaik. Game yang selesai lebih dari 3 menit setelah waktu habis ditandai `late` dan tidak dihitung.
 
 ## Isi repo
 
@@ -34,9 +35,8 @@ Developed by **WHS** (SoC – Telkom University)
 
 Setelah `setup` dijalankan, Sheet berisi tiga tab:
 
-- **Games**: satu baris per game (mulai, ID, nama, NIM, mode, ukuran, status, skor, aksi, selesai).
-- **Rekap**: rekap otomatis per mahasiswa (jumlah game, skor terbaik, total).
-- **Config**: peta dosen yang diatur dari game.
+- **Games**: satu baris per game (mulai, ID, nama, NIM, mode, ukuran, status, skor, aksi, selesai, sesi).
+- **Rekap**: rekap otomatis per sesi dan per mahasiswa (jumlah game, skor terbaik, total).
 
 ### 2. Sambungkan game ke Apps Script
 
@@ -54,12 +54,14 @@ Setelah 1–2 menit, game bisa dibuka di `https://<username>.github.io/wumpus-wo
 
 ## Pemakaian
 
-- **Mahasiswa**: buka link, pilih nama dari daftar presensi (atau Guest), pilih peta, lalu main. Tidak perlu login.
-- **Dosen**: klik **Admin** di bagian bawah halaman, lalu masukkan `ADMIN_KEY`. Setelah masuk, dosen bisa:
-  - melihat livescore (diperbarui setiap 4 detik);
-  - mereset kuota mahasiswa;
-  - menyalin rekap CSV;
-  - membuat custom map dan menjadikannya **Peta dosen**.
+- **Mahasiswa**: buka link, pilih nama dari daftar presensi (atau Guest), tekan **Gabung lobby**, lalu tunggu dosen menekan Mulai. Tidak perlu login. Di luar sesi tersedia mode **Latihan** (tidak dihitung).
+- **Dosen**: klik **Admin** di bagian bawah halaman, lalu masukkan `ADMIN_KEY`. Di **Dashboard** dosen bisa:
+  - mengatur sesi (judul, ukuran dunia, durasi, jumlah lubang dan Wumpus, atau peta tetap buatan sendiri);
+  - **Buka lobby → Mulai sekarang**, menambah waktu (+1 / +5 menit), atau mengakhiri sesi;
+  - memantau livescore dengan podium juara 1–3, peringkat, dan feed aktivitas; **Mode proyektor** untuk ditampilkan di kelas;
+  - menghapus skor satu pemain atau semua skor sesi (baris dihapus dari Google Sheet);
+  - menyalin rekap CSV.
+- Tema terang/gelap otomatis (terang pukul 06.00–18.00), bisa diganti lewat tombol di header.
 - Semua data permanen ada di Google Sheet, yang hanya bisa dibuka akun Gmail dosen.
 
 Kontrol: tombol panah / WASD untuk bergerak, `G` ambil, `F` lalu arah untuk menembak (atau `Shift`+panah), `C` keluar, `M` tandai, `N` suara. Di HP tersedia d-pad di layar.
@@ -67,6 +69,6 @@ Kontrol: tombol panah / WASD untuk bergerak, `G` ambil, `F` lalu arah untuk mene
 ## Catatan
 
 - Jika `Code.gs` diubah, buat versi baru lewat **Deploy → Manage deployments → Edit → Version: New version** agar URL tetap sama.
-- Pemain tidak login, jadi siapa pun bisa memilih nama orang lain. Kuota tetap terkunci per NIM di server.
-- Validasi skor di server (skor harus sama dengan −5 × aksi + bonus) mencegah perubahan sembarangan, tapi bukan pengaman penuh terhadap pemain yang memanipulasi kode halaman.
+- Pemain tidak login, jadi siapa pun bisa memilih nama orang lain. Skor tetap dicatat per NIM.
+- Validasi skor di server (skor harus sama dengan −5 × aksi + 3000 × Wumpus terbunuh + bonus akhir) mencegah perubahan sembarangan, tapi bukan pengaman penuh terhadap pemain yang memanipulasi kode halaman.
 - Kapasitas: livescore memakai cache Apps Script, bukan Sheet. Setiap pemain mengirim status paling sering setiap 4 detik, sehingga 40 pemain bersamaan masih jauh di bawah batas eksekusi Apps Script.

@@ -107,7 +107,7 @@ function doGet(e) {
       return out_({ ok: true, now: now, session: pub_(s, now), joined: Object.keys(j).map(function (k) { return j[k].name; }) });
     }
     if (a === 'board') {
-      var sid = clean_(q.sid, 40) || (s && s.id);
+      var sid = clean_(q.ses || q.sid, 40) || (s && s.id);
       if (!sid) return out_({ ok: true, now: now, board: [] });
       var b = cachedBoard_(sid).map(function (p) { return { key: p.key, name: p.name, best: p.best, total: p.total, games: p.games, wins: p.wins }; });
       return out_({ ok: true, now: now, sid: sid, board: b });

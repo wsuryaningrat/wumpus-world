@@ -499,7 +499,7 @@ async function pollSession(){if(!API_URL){setOnline(false);renderHome();return}
   if(SES&&SES.status!=="lobby"&&SES.status!=="none")pollBoard();if(prev==="lobby"&&SES&&SES.status==="running")play(["pick"])}
  catch(e){setOnline(false)}
  renderHome()}
-async function pollBoard(){if(!API_URL||!SES)return;try{const r=await apiGet({a:"board",sid:SES.id});if(r.ok){BOARD=r.board||[];renderBoardHome()}}catch(e){}}
+async function pollBoard(){if(!API_URL||!SES)return;try{const r=await apiGet({a:"board",ses:SES.id});if(r.ok){BOARD=r.board||[];renderBoardHome()}}catch(e){}}
 
 /* ---------- views ---------- */
 function show(v){for(const s of ["vHome","vGame","vEditor","vAdmin"])$(s).hidden=s!==v;window.scrollTo(0,0);document.body.classList.remove("proj");if(v==="vHome"){renderHome();pollSession()}if(v==="vAdmin")pollAdmin()}
